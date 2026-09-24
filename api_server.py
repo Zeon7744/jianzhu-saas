@@ -1,125 +1,158 @@
-#!/usr/bin/env python3
 """
-建筑检测 Agent 商业化封装
-
-将 jianzhu-agent 封装为可部署的 SaaS 产品：
-  - FastAPI Web API
-  - Docker 容器化
-  - 多租户支持
-  - 订阅计费接口
+jianzhu-saas: Building Inspection SaaS API Server
 """
-
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Optional
+import os
 import json
-from pathlib import Path
-import uvicorn
+import hashlib
+import time
+import uuid
+from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
+import re
 
-app = FastAPI(title="建检智管 API", version="2.0.0")
+class InspectionStore:
+    """Simple in-memory store for building inspections."""
+    
+    def __init__(self):
+        self.inspections = {}
+        self.assessments = {}
+    
+    def create_inspection(self, data):
+        inspection_id = str(uuid.uuid4())[:8]
+        record = {
+            'id': inspection_id,
+            'created': time.time(),
+            'status': 'pending',
+            'data': data
+        }
+        self.inspections[inspection_id] = record
+        return record
+    
+    def get_inspection(self, inspection_id):
+        return self.inspections.get(inspection_id)
+    
+    def create_assessment(self, data):
+        assessment_id = str(uuid.uuid4())[:8]
+        
+        # MLP-inspired risk scoring
+        metrics = data.get('metrics', {})
+        risk_score = self._calculate_risk(metrics)
+        
+        record = {
+            'id': assessment_id,
+            'created': time.time(),
+            'risk_score': risk_score,
+            'risk_level': self._risk_level(risk_score),
+            'recommendations': self._recommendations(metrics, risk_score),
+            'data': data
+        }
+        self.assessments[assessment_id] = record
+        return record
+    
+    def _calculate_risk(self, m):
+        """Calculate structural risk score (0-100, higher = more risk)."""
+        score = 0.0
+        # Concrete strength (MPa) - lower is worse
+        cs = float(m.get('concrete_strength_mpa', 25))
+        if cs < 15: score += 40
+        elif cs < 20: score += 25
+        elif cs < 25: score += 10
+        # Rebar cover - should be 20-40mm
+        rc = float(m.get('rebar_cover_mm', 30))
+        if rc < 15: score += 30
+        elif rc < 20: score += 15
+        elif rc > 50: score += 10
+        # Crack width - should be < 0.3mm
+        cw = float(m.get('crack_width_mm', 0.1))
+        if cw > 0.5: score += 30
+        elif cw > 0.3: score += 20
+        elif cw > 0.2: score += 10
+        return min(100.0, score)
+    
+    def _risk_level(self, score):
+        if score >= 70: return 'CRITICAL'
+        if score >= 50: return 'HIGH'
+        if score >= 30: return 'MEDIUM'
+        if score >= 15: return 'LOW'
+        return 'MINIMAL'
+    
+    def _recommendations(self, m, score):
+        recs = []
+        if score >= 70:
+            recs.append('Immediate structural reinforcement required')
+            recs.append('Engage certified structural engineer within 48 hours')
+        elif score >= 50:
+            recs.append('Schedule detailed structural assessment within 2 weeks')
+            recs.append('Review crack propagation patterns')
+        elif score >= 30:
+            recs.append('Monitor crack width monthly')
+            recs.append('Verify rebar corrosion levels')
+        else:
+            recs.append('Routine inspection every 12 months')
+        return recs
 
-# ── 数据模型 ─────────────────────────────────────────────────
-class ReportRequest(BaseModel):
-    report_type: str = "结构检测"
-    project_name: str
-    region: str
-    building_type: str = "住宅"
-    attachments: Optional[List[str]] = None
+store = InspectionStore()
 
-class ReportResponse(BaseModel):
-    task_id: str
-    status: str
-    analysis: dict
-    recommendations: List[str]
-    estimated_time: int  # 分钟
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        print(f"[{time.strftime('%H:%M:%S')}] {fmt % args}")
+    
+    def _send(self, code, body):
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(body, ensure_ascii=False).encode())
+    
+    def do_GET(self):
+        if self.path == '/health':
+            self._send(200, {'status': 'ok', 'time': time.time()})
+        elif self.path.startswith('/api/inspections/'):
+            iid = self.path.split('/')[-1]
+            record = store.get_inspection(iid)
+            if record:
+                self._send(200, record)
+            else:
+                self._send(404, {'error': 'Not found'})
+        elif self.path == '/api/assessments':
+            results = list(store.assessments.values())
+            self._send(200, {'count': len(results), 'items': results})
+        elif self.path.startswith('/api/assessments/'):
+            aid = self.path.split('/')[-1]
+            record = store.assessments.get(aid)
+            if record:
+                self._send(200, record)
+            else:
+                self._send(404, {'error': 'Not found'})
+        else:
+            self._send(404, {'error': 'Not found', 'endpoints': [
+                'GET /health',
+                'POST /api/inspections',
+                'GET /api/inspections/<id>',
+                'POST /api/assessments',
+                'GET /api/assessments',
+                'GET /api/assessments/<id>',
+            ]})
+    
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        raw = self.rfile.read(content_length)
+        try:
+            body = json.loads(raw) if raw else {}
+        except:
+            self._send(400, {'error': 'Invalid JSON'})
+            return
+        
+        if self.path == '/api/inspections':
+            record = store.create_inspection(body)
+            self._send(201, record)
+        elif self.path == '/api/assessments':
+            record = store.create_assessment(body)
+            self._send(201, record)
+        else:
+            self._send(404, {'error': 'Not found'})
 
-class Subscription(BaseModel):
-    tenant_id: str
-    plan: str = "basic"  # basic, pro, enterprise
-    monthly_quota: int
-    features: List[str]
-
-# ── API 端点 ─────────────────────────────────────────────────
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "version": "2.0.0"}
-
-@app.post("/api/v1/analyze", response_model=ReportResponse)
-async def analyze_report(req: ReportRequest):
-    """分析建筑检测报告"""
-    # 模拟分析逻辑
-    return ReportResponse(
-        task_id=f"TASK-{int(__import__('time').time())}",
-        status="completed",
-        analysis={
-            "report_type": req.report_type,
-            "project": req.project_name,
-            "key_findings": ["发现结构性裂缝", "混凝土强度达标", "地基沉降正常"],
-            "risk_level": "medium",
-            "confidence": 0.92
-        },
-        recommendations=[
-            "建议对裂缝进行注浆加固处理",
-            "定期监测地基沉降数据",
-            "补充材料检测报告"
-        ],
-        estimated_time=15
-    )
-
-@app.get("/api/v1/standards")
-async def get_standards(keyword: str, standard_type: str = "GB"):
-    """查询建筑规范标准"""
-    standards = [
-        {"code": f"GB {standard_type}-2024-{keyword[:4]}", "title": f"建筑{keyword}设计规范", "level": "国家级"},
-        {"code": f"JGJ {standard_type}-2023-{keyword[:4]}", "title": f"建筑{keyword}行业标准", "level": "行业级"},
-    ]
-    return {"standards": standards, "count": len(standards)}
-
-@app.post("/api/v1/checkout")
-async def generate_checklist(project_type: str, region: str = "全国"):
-    """生成检测项目清单"""
-    checklist = {
-        "project_type": project_type,
-        "region": region,
-        "items": [
-            {"id": 1, "name": "外观检查", "frequency": "每次", "required": True},
-            {"id": 2, "name": "材料检测", "frequency": "进场时", "required": True},
-            {"id": 3, "name": "结构检测", "frequency": "竣工后", "required": True},
-            {"id": 4, "name": "环境检测", "frequency": "年度", "required": False},
-        ],
-        "total_items": 4
-    }
-    return checklist
-
-@app.post("/api/v1/subscribe")
-async def create_subscription(sub: Subscription):
-    """创建订阅"""
-    plans = {
-        "basic": {"price": 99, "quota": 100, "features": ["基础分析"]},
-        "pro": {"price": 299, "quota": 500, "features": ["基础分析", "深度报告", "API调用"]},
-        "enterprise": {"price": 999, "quota": -1, "features": ["全部功能", "私有部署", "定制开发"]}
-    }
-    plan = plans.get(sub.plan, plans["basic"])
-    return {
-        "tenant_id": sub.tenant_id,
-        "plan": sub.plan,
-        "monthly_fee": plan["price"],
-        "quota": plan["quota"],
-        "features": plan["features"],
-        "status": "active"
-    }
-
-@app.get("/api/v1/stats")
-async def get_stats(tenant_id: str):
-    """获取使用统计"""
-    return {
-        "tenant_id": tenant_id,
-        "total_analyses": 156,
-        "remaining_quota": 844,
-        "last_analysis": "2026-09-24T02:00:00Z",
-        "subscription_plan": "pro"
-    }
-
-# ── 启动入口 ─────────────────────────────────────────────────
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+if __name__ == '__main__':
+    port = int(os.environ.get('FLASK_PORT', 8080))
+    server = ThreadingHTTPServer(('0.0.0.0', port), Handler)
+    print(f"jianzhu-saas API server running on port {port}")
+    print(f"Endpoints: /health, /api/inspections, /api/assessments")
+    server.serve_forever()
