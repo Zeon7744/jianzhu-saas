@@ -1,87 +1,80 @@
-# jianzhu-saas - Building Inspection SaaS API
+# 🏗️ Jianzhu SaaS — 建筑SaaS平台
 
-Enterprise-grade building inspection and structural assessment SaaS platform.
+> **建筑项目管理SaaS解决方案** — 进度管理 · 成本管控 · 协同办公  
+> 面向中小型建筑企业的数字化管理工具
 
-## Features
+[![GitHub Stars](https://img.shields.io/github/stars/Zeon7744/jianzhu-saas?style=social)](https://github.com/Zeon7744/jianzhu-saas)
+[![GitHub Forks](https://img.shields.io/github/forks/Zeon7744/jianzhu-saas?style=social)](https://github.com/Zeon7744/jianzhu-saas/forks)
+[![GitHub License](https://img.shields.io/github/license/Zeon7744/jianzhu-saas)](https://github.com/Zeon7744/jianzhu-saas/blob/main/LICENSE)
+[![Gitee Stars](https://gitee.com/Zeon7744/jianzhu-saas/badge/star.svg?theme=gvp)](https://gitee.com/Zeon7744/jianzhu-saas)
 
-- **API-first architecture**: RESTful API for building inspection data
-- **MLP risk scoring**: Machine learning prediction for structural risk
-- **Compliance checking**: Automated code compliance verification
-- **Report generation**: PDF/HTML inspection reports
-- **Multi-tenant**: Isolated data per organization
+---
 
-## Quick Start
+## 📌 这是 GitHub 官方主仓
+
+> **Gitee 镜像**: [gitee.com/Zeon7744/jianzhu-saas](https://gitee.com/Zeon7744/jianzhu-saas)
+
+Issues 和 PR 请在 GitHub 提交。
+
+---
+
+## ⚡ 快速开始
 
 ```bash
-pip install flask
-python api_server.py
+git clone https://github.com/Zeon7744/jianzhu-saas.git
+cd jianzhu-saas
+npm install
+# 或
+pip install -r requirements.txt
+npm run dev
 ```
 
-## API Endpoints
+---
 
-### Health Check
-```
-GET /health
-```
+## 🛠️ 核心功能
 
-### Create Inspection
-```
-POST /api/inspections
-Content-Type: application/json
+| 模块 | 功能 |
+|------|------|
+| **项目管理** | 工程进度、里程碑、任务分配 |
+| **成本管控** | 预算编制、成本核算、超支预警 |
+| **协同办公** | 文档共享、审批流程、消息通知 |
+| **数据统计** | 进度报表、成本分析、风险预警 |
 
-{
-  "building_id": "BLD-001",
-  "inspector": "Zhang Wei",
-  "type": "structural",
-  "findings": [...]
-}
-```
+---
 
-### Get Inspection
-```
-GET /api/inspections/<id>
-```
+## 📁 项目结构
 
-### Risk Assessment
 ```
-POST /api/assessments
-Content-Type: application/json
-
-{
-  "building_id": "BLD-001",
-  "metrics": {
-    "concrete_strength_mpa": 25,
-    "rebar_cover_mm": 25,
-    "crack_width_mm": 0.2
-  }
-}
+jianzhu-saas/
+├── frontend/           # 前端代码 (Vue/React)
+├── backend/            # 后端服务 (Node.js/Python)
+├── database/           # 数据库脚本
+├── docs/               # 开发文档
+├── README.md          # 项目文档
+└── Dockerfile         # 容器化配置
 ```
 
-## Configuration
+---
 
-```env
-FLASK_HOST=0.0.0.0
-FLASK_PORT=8080
-SECRET_KEY=your-secret-key
-DATABASE_URL=sqlite:///inspections.db
-```
+## ⚠️ 注意事项
 
-## Deployment
+- 本系统仅供研究学习使用
+- 投资有风险，决策需谨慎
 
-### Docker
-```dockerfile
-FROM python:3.11-slim
-COPY . /app
-WORKDIR /app
-RUN pip install -r requirements.txt
-EXPOSE 8080
-CMD ["python", "api_server.py"]
-```
+---
 
-### Cloud
-- AWS ECS / GCP Cloud Run / Aliyun SAE
-- Minimum: 1 vCPU, 512MB RAM
+## 🤝 贡献指南
 
-## License
+欢迎提交 Issue 和 Pull Request！
 
-MIT
+---
+
+## 📄 许可证
+
+MIT License
+
+---
+
+**开发者**: Zeon7744  
+**最后更新**: 2026-09-25  
+**GitHub**: https://github.com/Zeon7744/jianzhu-saas
