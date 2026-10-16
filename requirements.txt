@@ -1,0 +1,5 @@
+# jianzhu-saas 运行依赖
+# 最小实现全部基于 Python 标准库，无第三方依赖。
+# 以下为可选增强（替换内存/SQLite 后按需引入），MVP 阶段无需安装：
+#   - 生产持久化建议升级到 PostgreSQL：psycopg2-binary
+#   - 若改用标准 JWT 库替代自实现：PyJWT
