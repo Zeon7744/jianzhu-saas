@@ -1,10 +1,5 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
-.venv/
-*.egg-info/
-.env
-node_modules/
-dist/
-build/
-.vscode/
-.idea/
+data/*.db
+!data/.gitkeep
+
