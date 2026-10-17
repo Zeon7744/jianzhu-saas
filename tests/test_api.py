@@ -141,3 +141,41 @@ class TestHttpSmoke(unittest.TestCase):
         code, body = self._get("/billing/credit", tok["token"])
         self.assertEqual(code, 200)
         self.assertIn("credits", body)
+
+
+class TestRiskEngineExtended(unittest.TestCase):
+    """第二批原理层完善：RiskEngine 7 维度 + 权重可配 + breakdown 可解释。"""
+
+    def test_score_explained_returns_7_dims(self):
+        from store import RiskEngine
+        eng = RiskEngine()
+        m = {"concrete_strength_mpa": 12, "rebar_cover_mm": 14, "crack_width_mm": 0.6,
+             "rebar_corrosion_pct": 3, "carbonation_depth_mm": 15, "settlement_mm": 40, "load_ratio": 0.8}
+        score, breakdown = eng.score_explained(m)
+        self.assertEqual(len(breakdown), 7)
+        self.assertGreater(score, 50)  # 多维恶化 → 高风险
+        for b in breakdown:
+            self.assertIn(b["dimension"], [d[0] for d in eng.DIMENSIONS])
+            self.assertGreaterEqual(b["item_risk"], 0)
+            self.assertGreaterEqual(b["contribution"], 0)
+
+    def test_building_type_preset_changes_weights(self):
+        from store import RiskEngine
+        bridge = RiskEngine(building_type="bridge")
+        self.assertEqual(bridge.weights["load_ratio"], 0.25)
+        res = RiskEngine(building_type="residential")
+        self.assertEqual(res.weights["rebar_corrosion_pct"], 0.20)
+
+    def test_backward_compat_score_returns_float(self):
+        from store import RiskEngine
+        eng = RiskEngine()
+        s = eng.score({"concrete_strength_mpa": 10})
+        self.assertIsInstance(s, float)
+
+    def test_create_assessment_includes_breakdown(self):
+        import store as S
+        # 只评实际提供的维度（2 项），缺省维度不惩罚不拉分
+        r = S.store.create_assessment("t1", {"metrics": {"concrete_strength_mpa": 10, "crack_width_mm": 0.6}})
+        self.assertIn("breakdown", r)
+        self.assertEqual(len(r["breakdown"]), 2)
+        self.assertIn("disclaimer", r)

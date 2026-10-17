@@ -186,12 +186,17 @@ INDEX_HTML = """<!doctype html>
  <label>混凝土强度 (MPa)</label><input id="cs" type="number" step="0.1" value="12">
  <label>钢筋保护层 (mm)</label><input id="rc" type="number" step="0.1" value="14">
  <label>裂缝宽度 (mm)</label><input id="cw" type="number" step="0.01" value="0.6">
+ <label>钢筋锈蚀率 (%)</label><input id="corr" type="number" step="0.1" value="0">
+ <label>碳化深度 (mm)</label><input id="carb" type="number" step="0.1" value="0">
+ <label>沉降位移 (mm)</label><input id="settle" type="number" step="0.1" value="0">
+ <label>荷载比 (-)</label><input id="load" type="number" step="0.01" value="0.5">
  <button onclick="assess()">评估风险</button>
  <button onclick="credit()" class="muted" style="background:none;color:#888">查看 Credit</button>
 </div>
 <div class="card" id="out" style="display:none">
  <h2>结果</h2>
  <div>风险分：<span id="score"></span> ｜ 等级：<span id="level" class="lvl"></span></div>
+ <h3>分项得分</h3><table id="bd" style="width:100%;border-collapse:collapse;font-size:.9em"><tr style="font-weight:600"><td>维度</td><td>值</td><td>风险</td><td>权重</td><td>贡献</td></tr></table>
  <h3>建议</h3><ul id="recs" class="rec"></ul>
  <div class="muted" id="dis"></div>
 </div>
@@ -206,7 +211,11 @@ INDEX_HTML = """<!doctype html>
  }
  async function assess(){
    const body={metrics:{concrete_strength_mpa:+document.getElementById("cs").value,
-     rebar_cover_mm:+document.getElementById("rc").value,crack_width_mm:+document.getElementById("cw").value}};
+     rebar_cover_mm:+document.getElementById("rc").value,crack_width_mm:+document.getElementById("cw").value,
+     rebar_corrosion_pct:+document.getElementById("corr").value,
+     carbonation_depth_mm:+document.getElementById("carb").value,
+     settlement_mm:+document.getElementById("settle").value,
+     load_ratio:+document.getElementById("load").value}};
    const r=await fetch("/api/assessments",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify(body)});
    if(r.status===402){alert("Credit 不足");document.getElementById("st").textContent="Credit 不足";return;}
    const d=await r.json();
@@ -214,6 +223,9 @@ INDEX_HTML = """<!doctype html>
    document.getElementById("score").textContent=d.risk_score;
    document.getElementById("level").textContent=d.risk_level;
    document.getElementById("level").className="lvl "+(d.risk_score>=50?"warn":"ok");
+   (d.breakdown||[]).forEach(b=>{var tr=document.createElement("tr");
+     tr.innerHTML="<td>"+b.dimension+"</td><td>"+b.value+"</td><td>"+b.item_risk+"</td><td>"+b.weight+"</td><td>"+b.contribution+"</td>";
+     var t=document.getElementById("bd");t.insertBefore(tr,t.firstChild);});
    document.getElementById("recs").innerHTML=d.recommendations.map(x=>"<li>"+x+"</li>").join("");
    document.getElementById("dis").textContent=d.disclaimer;
    document.getElementById("st").textContent="剩余 Credit: "+d.credit_remaining;
