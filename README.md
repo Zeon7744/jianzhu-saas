@@ -28,3 +28,15 @@ curl -X POST :8080/api/assessments -H "Authorization: Bearer <token>" \
 
 ## 免责声明（产品层）
 本系统输出**仅为算法参考**。任何结构安全判定、加固或停用决策，必须由**持证结构工程师**签字负责。
+
+---
+
+## 🚀 免费 → Pro → 企业（变现入口）
+
+免费=100 次评估/月；Pro=无限评估+PDF 报告导出；企业=私有部署+定制算法
+
+- **免费**：立即 [安装/克隆] 使用，命中配额即可升级。
+- **Pro**：[Gitee Pro 订阅](https://gitee.com/Zeon7744) 解锁高级能力。
+- **企业**：私有部署 / 定制需求 → 见 `pricing.md`，或联系商务（GitHub Issues / Gitee）。
+
+> 详细定价与 SKU 见 [pricing.md](pricing.md) ｜ 支持项目见 [FUNDING.yml](FUNDING.yml)

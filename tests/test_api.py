@@ -62,3 +62,82 @@ class TestAuth(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHttpSmoke(unittest.TestCase):
+    """HTTP 层冒烟：起 ThreadingHTTPServer + urllib 打 4 端点（第二批 patch #7）。"""
+
+    @classmethod
+    def setUpClass(cls):
+        import socket
+        from api_server import Handler
+        import socketserver
+        # 随机空闲端口
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        cls.port = s.getsockname()[1]
+        s.close()
+        ThreadingHTTPServer = socketserver.ThreadingMixIn,
+        # 直接用标准库 ThreadingHTTPServer
+        from http.server import ThreadingHTTPServer as _T
+        cls._srv = _T(("127.0.0.1", cls.port), Handler)
+        cls._th = threading.Thread(target=cls._srv.serve_forever, daemon=True)
+        cls._th.start()
+        cls.base = f"http://127.0.0.1:{cls.port}"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._srv.shutdown()
+        cls._srv.server_close()
+
+    def _get(self, path, token=None):
+        import urllib.request
+        req = urllib.request.Request(self.base + path)
+        if token:
+            req.add_header("Authorization", "Bearer " + token)
+        try:
+            with urllib.request.urlopen(req) as r:
+                return r.status, json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode() or "{}")
+
+    def _post(self, path, body, token=None):
+        import urllib.request
+        data = json.dumps(body).encode()
+        req = urllib.request.Request(self.base + path, data=data, method="POST")
+        req.add_header("Content-Type", "application/json")
+        if token:
+            req.add_header("Authorization", "Bearer " + token)
+        try:
+            with urllib.request.urlopen(req) as r:
+                return r.status, json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read().decode() or "{}")
+
+    def test_health_noauth(self):
+        code, body = self._get("/health")
+        self.assertEqual(code, 200)
+        self.assertEqual(body["status"], "ok")
+
+    def test_assess_noauth_401(self):
+        code, _ = self._post("/api/assessments", {"metrics": {"concrete_strength_mpa": 10}})
+        self.assertEqual(code, 401)
+
+    def test_assess_with_demo_token(self):
+        code, tok = self._post("/auth/demo-token", {"plan": "free"})
+        self.assertEqual(code, 200)
+        token = tok["token"]
+        code, body = self._post(
+            "/api/assessments",
+            {"metrics": {"concrete_strength_mpa": 10, "rebar_cover_mm": 14, "crack_width_mm": 0.6}},
+            token,
+        )
+        self.assertEqual(code, 201)
+        self.assertIn("risk_level", body)
+        self.assertIn("disclaimer", body)
+
+    def test_billing_credit_with_token(self):
+        code, tok = self._post("/auth/demo-token", {"plan": "free"})
+        code, body = self._get("/billing/credit", tok["token"])
+        self.assertEqual(code, 200)
+        self.assertIn("credits", body)
