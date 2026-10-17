@@ -48,6 +48,25 @@ class TestTenantAndQuota(unittest.TestCase):
         self.assertTrue(r["allowed"])
         self.assertEqual(r["remaining"], t["credits"] - 1)
 
+    def test_cross_tenant_no_leak(self):
+        """P1 信任地基：跨租户数据不可见、计量互不影响。"""
+        s = store.Store()
+        s.create_assessment("isol_A", {"metrics": {"concrete_strength_mpa": 10}})
+        s.create_assessment("isol_B", {"metrics": {"concrete_strength_mpa": 10}})
+        # A 列表里只可能看到 A 的记录（租户过滤）
+        a_list = s.list_assessments("isol_A")
+        self.assertTrue(all(x["tenant_id"] == "isol_A" for x in a_list))
+        # B 列表里不应含 A 的记录
+        b_list = s.list_assessments("isol_B")
+        self.assertTrue(all(x["tenant_id"] == "isol_B" for x in b_list))
+        # 计量：A 消耗不扣 B 的 credits
+        store.tsvc.ensure_tenant("isol_A", plan="free")
+        store.tsvc.ensure_tenant("isol_B", plan="free")
+        rA = store.usage.record("isol_A", "assessment", 1)
+        self.assertTrue(rA["allowed"])
+        b_t = store.tsvc.get("isol_B")
+        self.assertEqual(b_t["credits"], store.TenantService.PLAN_CREDIT.get("free", 100))
+
 
 class TestAuth(unittest.TestCase):
     def test_roundtrip(self):
@@ -71,13 +90,11 @@ class TestHttpSmoke(unittest.TestCase):
     def setUpClass(cls):
         import socket
         from api_server import Handler
-        import socketserver
         # 随机空闲端口
         s = socket.socket()
         s.bind(("127.0.0.1", 0))
         cls.port = s.getsockname()[1]
         s.close()
-        ThreadingHTTPServer = socketserver.ThreadingMixIn,
         # 直接用标准库 ThreadingHTTPServer
         from http.server import ThreadingHTTPServer as _T
         cls._srv = _T(("127.0.0.1", cls.port), Handler)
