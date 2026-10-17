@@ -92,6 +92,40 @@ class TenantService:
         return t["credits"] >= cost, t
 
 
+
+    def list_tenants(self, limit=100):
+        """列出所有租户（管理后台 / 运营用）。"""
+        c = conn()
+        rows = c.execute(
+            "SELECT * FROM tenants ORDER BY created DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def set_plan(self, tenant_id, plan, credits=None):
+        """升降级套餐。credits 显式传则覆盖，否则用新套餐默认额度。"""
+        if plan not in self.PLAN_CREDIT:
+            return False
+        new_credit = self.PLAN_CREDIT[plan] if credits is None else int(credits)
+        c = conn()
+        c.execute(
+            "UPDATE tenants SET plan=?, credits=? WHERE tenant_id=?",
+            (plan, new_credit, tenant_id),
+        )
+        c.commit()
+        return self.get(tenant_id)
+
+    def topup_credit(self, tenant_id, amount):
+        """充值 credits（收款回调成功后调用）。返回最新剩余。"""
+        if amount <= 0:
+            return None
+        c = conn()
+        c.execute(
+            "UPDATE tenants SET credits=credits+? WHERE tenant_id=?",
+            (int(amount), tenant_id),
+        )
+        c.commit()
+        return self.get(tenant_id)
+
 tsvc = TenantService()
 
 
