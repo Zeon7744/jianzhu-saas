@@ -5,7 +5,8 @@
 国内候选接入：微信商户（企业主体）/ 支付宝当面付 / 爱收钱聚合 / 云市场订阅
 实现类通过 BUILTIN_REGISTRY 注册，运行时按环境选择，缺省为 NoopGateway。
 
-【MVP 阶段】默认 NoopGateway；爱收钱网关已写骨架，API key 填入后切换。
+【MVP 阶段】默认 NoopGateway；爱收钱 / 虎皮椒网关均已写骨架，凭证填入后切换。
+【推荐】个人主体选虎皮椒（HuPijiao）：只需 pid，开通 10 分钟，H5 收款。
 """
 import os
 import time
@@ -101,6 +102,73 @@ class AiShouQianGateway:
         return {"order_id": order_id, "refunded_cents": amount_cents, "ok": True, "reason": reason}
 
 
+
+class HuPijiaoGateway:
+    """虎皮椒 XunHupay 聚合网关（个人/小微可接，支持微信+支付宝 H5 收款）。
+
+    相比爱收钱，个人开通门槛更低：只需一个商户 pid 即可发起 H5 支付链接。
+
+    环境变量：
+      JZ_SAAS_XUNHU_PID        虎皮椒商户 pid（必填）
+      JZ_SAAS_XUNHU_MERCHANT   商户名（可选，默认 jianzhu-saas）
+      JZ_SAAS_XUNHU_NAME       收款主体名（可选）
+      JZ_SAAS_XUNHU_MODE       pay模式=h5；默认 h5
+
+    虎皮椒 API 文档：https://www.xunhupay.com/developer
+    开通：注册 xunhupay.com 拿 pid 即可（个人可开），费率约 0.6%。
+
+    【MVP 说明】骨架实现，真实下单需把 TODO 换成 GET https://www.xunhupay.com/api/mapi.php
+    （action=pay, pay=H5, pid=..., 金额, 订单, 回调）。query/refund 走 mapi 对应 action。
+    """
+    name = "xunhupay"
+
+    def __init__(self):
+        self.pid = os.environ.get("JZ_SAAS_XUNHU_PID", "")
+        self.merchant = os.environ.get("JZ_SAAS_XUNHU_MERCHANT", "jianzhu-saas")
+        self.name_field = os.environ.get("JZ_SAAS_XUNHU_NAME", "")
+
+    def create_order(self, tenant_id, amount_cents, product, plan, order_meta=None):
+        if not self.pid:
+            raise RuntimeError("JZ_SAAS_XUNHU_PID 未配置，无法真实下单")
+        oid = "xunhu_" + str(uuid.uuid4())[:12]
+        # TODO: 真实 GET 虎皮椒 H5 下单接口
+        import urllib.parse
+        params = {
+            "action": "pay",
+            "pay": "H5",
+            "pid": self.pid,
+            "mname": self.merchant,
+            "amount": format(amount_cents / 100.0, ".2f"),  # 虎皮椒金额单位：元
+            "money": format(amount_cents / 100.0, ".2f"),
+            "device": "1",
+            "name": f"{product}:{plan}",
+            "out_order_id": oid,
+            "url": os.environ.get("JZ_SAAS_XUNHU_RETURN", "/billing/return"),
+            "notify_url": os.environ.get("JZ_SAAS_XUNHU_NOTIFY", "/billing/callback"),
+        }
+        qs = urllib.parse.urlencode(params)
+        pay_url = f"https://www.xunhupay.com/api/mapi.php?{qs}"
+        print(f"[xunhupay] 下单 {oid} amount={amount_cents} plan={plan}（MVP 占位，未真实调 API）")
+        return {
+            "order_id": oid,
+            "status": "created",
+            "amount_cents": amount_cents,
+            "plan": plan,
+            "product": product,
+            "ts": int(time.time()),
+            "pay_url": pay_url,
+            "meta": order_meta or {},
+        }
+
+    def query_callback(self, order_id):
+        # TODO: 真实 GET 虎皮椒 mapi action=order 查单
+        return {"order_id": order_id, "status": "unpaid", "paid": False}
+
+    def refund(self, order_id, amount_cents, reason="user_request"):
+        # TODO: 真实 GET 虎皮椒 mapi action=refund 退款
+        return {"order_id": order_id, "refunded_cents": amount_cents, "ok": True, "reason": reason}
+
+
 class Gateway:
     """统一收款接口。子类实现 create_order / query_callback / refund。"""
     name = "base"
@@ -126,6 +194,7 @@ def register_gateway(cls):
 
 register_gateway(NoopGateway)
 register_gateway(AiShouQianGateway)
+register_gateway(HuPijiaoGateway)
 
 
 def get_gateway(name: str = None) -> Gateway:
