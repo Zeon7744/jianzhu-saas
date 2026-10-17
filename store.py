@@ -91,6 +91,27 @@ class TenantService:
             return True, t
         return t["credits"] >= cost, t
 
+    def deduct_credit(self, tenant_id, cost):
+        """原子扣减（防并发超扣）。
+        修复：旧逻辑是先 has_credit 查后扣（TOCTOU），并发评估同一租户时可超扣。
+        现用 `UPDATE ... WHERE credits >= cost` 原子扣减，按 rowcount 判断是否成功。
+        enterprise 租户无 credit 限制，直接放行。返回 (allowed, remaining)。"""
+        t = self.get(tenant_id)
+        if not t:
+            return False, None
+        if t["plan"] == "enterprise":
+            return True, None
+        c = conn()
+        cur = c.execute(
+            "UPDATE tenants SET credits = credits - ? "
+            "WHERE tenant_id = ? AND credits >= ?",
+            (int(cost), tenant_id, int(cost)),
+        )
+        c.commit()
+        if cur.rowcount == 0:
+            return False, self.get(tenant_id)["credits"]
+        return True, self.get(tenant_id)["credits"]
+
 
 
     def list_tenants(self, limit=100):
@@ -212,7 +233,8 @@ class UsageMeter:
     """计量 + Credit 扣减。计费 Credit 的最小实现。"""
 
     def record(self, tenant_id, action, cost=1):
-        ok, tenant = tsvc.has_credit(tenant_id, cost)
+        # 先原子扣减（防并发超扣），再记 usage 事件。
+        ok, remaining = tsvc.deduct_credit(tenant_id, cost)
         if not ok:
             return {"allowed": False, "reason": "insufficient_credits_or_tenant"}
         c = conn()
@@ -220,12 +242,8 @@ class UsageMeter:
             "INSERT INTO usage_events (id,tenant_id,action,ts,credit_cost) VALUES (?,?,?,?,?)",
             (new_id(), tenant_id, action, time.time(), cost),
         )
-        if tenant["plan"] != "enterprise":
-            c.execute(
-                "UPDATE tenants SET credits=credits-? WHERE tenant_id=?", (cost, tenant_id)
-            )
         c.commit()
-        return {"allowed": True, "remaining": tsvc.get(tenant_id)["credits"]}
+        return {"allowed": True, "remaining": remaining}
 
 
 class RiskEngine:

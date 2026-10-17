@@ -12,8 +12,27 @@ import hmac
 import hashlib
 import os
 
-SECRET = os.environ.get("JZ_SAAS_JWT_SECRET", "dev-secret-change-me")
+# 生产模式（JZ_SAAS_ENV=prod）下 secret 缺失即拒绝启动，避免全租户共用 dev 密钥。
+_ENV = os.environ.get("JZ_SAAS_ENV", "dev")
+_DEFAULT_SECRET = "dev-secret-change-me"
+_SECRET = os.environ.get("JZ_SAAS_JWT_SECRET", "")
+if not _SECRET:
+    if _ENV == "prod":
+        raise RuntimeError(
+            "JZ_SAAS_JWT_SECRET must be set in production (JZ_SAAS_ENV=prod); "
+            "refusing to start with the default dev secret."
+        )
+    _SECRET = _DEFAULT_SECRET
+    import warnings
+
+    warnings.warn(
+        "JZ_SAAS_JWT_SECRET not set, using insecure dev secret. "
+        "Set it in production and set JZ_SAAS_ENV=prod."
+    )
+SECRET = _SECRET
 TTL = int(os.environ.get("JZ_SAAS_JWT_TTL", 3600))
+# exp 校验时钟漂移容差（秒）：跨机部署 / NTP 偏差下避免误拒刚签发 token。
+EXP_SKEW = int(os.environ.get("JZ_SAAS_JWT_SKEW", 60))
 
 
 def _b64url(data: bytes) -> str:
@@ -58,6 +77,12 @@ def verify_token(token: str):
         claims = json.loads(_b64url_decode(payload))
     except Exception:
         return None, "bad_payload"
-    if int(claims.get("exp", 0)) < int(time.time()):
+    now = int(time.time())
+    # exp 带时钟漂移容差，避免跨机 NTP 偏差误拒刚签发 token
+    if int(claims.get("exp", 0)) < now - EXP_SKEW:
         return None, "token_expired"
+    # 拒绝 iat 在未来（时钟异常 / 伪造 token），超过容差视为非法
+    iat = int(claims.get("iat", now))
+    if iat > now + EXP_SKEW:
+        return None, "iat_in_future"
     return claims, None
