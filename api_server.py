@@ -76,6 +76,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"tenant": t, "role": claims.get("role")})
         if self.path == "/billing/credit":
             return self._send(200, {"tenant_id": tid, "credits": t["credits"], "plan": t["plan"]})
+        # 管理后台：列出所有租户（仅 admin）
+        if self.path == "/admin/tenants":
+            role = claims.get("role", "operator")
+            if role != "admin":
+                return self._send(403, {"error": "admin_only"})
+            tenants = tsvc.list_tenants()
+            return self._send(200, {"count": len(tenants), "tenants": tenants})
 
         if self.path.startswith("/api/inspections/"):
             iid = self.path.split("/")[-1]
@@ -130,6 +137,21 @@ class Handler(BaseHTTPRequestHandler):
             order = billing.create_order_for_tenant(tid, plan, amount)
             t = tsvc.ensure_tenant(tid, plan=plan)
             return self._send(200, {"order": order, "tenant": t})
+
+        # 管理后台：套餐升降级 + 充值（仅 admin）
+        if self.path == "/admin/set-plan":
+            if role != "admin":
+                return self._send(403, {"error": "admin_only"})
+            target = body.get("tenant_id") or tid
+            plan = body.get("plan")
+            res = tsvc.set_plan(target, plan, credits=body.get("credits"))
+            return self._send(200, res) if res else self._send(400, {"error": "bad_plan"})
+        if self.path == "/billing/topup":
+            if role != "admin":
+                return self._send(403, {"error": "admin_only"})
+            amount = int(body.get("amount", 0))
+            res = tsvc.topup_credit(tid, amount)
+            return self._send(200, res) if res else self._send(400, {"error": "bad_amount"})
 
         return self._send(404, {"error": "Not found"})
 
