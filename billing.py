@@ -7,7 +7,8 @@
   - WxPayGateway      : 微信商户（企业主体，JSAPI/H5 下单 + 回调验签 + 退款）
   - AishouqianGateway : 爱收钱聚合（MVP 门槛最低，二维码收银台）
   - AfdianGateway     : 爱发电（个人创作者 10 分钟开通，API 查订单 + Webhook 回调，无需备案域名）
-选择：环境变量 JZ_SAAS_BILLING_GATEWAY=noop|wepay|aishouqian|afdian（缺省 noop）
+  - HupipayGateway    : 虎皮椒（商户收款，APPID/APPSECRET 鉴权，支持 Notify/Return 双回调）
+选择：环境变量 JZ_SAAS_BILLING_GATEWAY=noop|wepay|aishouqian|afdian|hupipay（缺省 noop）
 所有密钥走环境变量，不落代码。
 """
 import os
@@ -377,6 +378,201 @@ register_gateway(AishouqianGateway)
 register_gateway(AfdianGateway)
 
 
+class HupipayGateway(Gateway):
+    """
+    虎皮椒网关（商户收款，APPID/APPSECRET 鉴权）。
+    API 文档：参考虎皮椒官方文档（https://www.hupipay.com）
+    开通：注册虎皮椒商户 → 控制台获取 APPID + APPSECRET
+
+    环境变量：
+      JZ_SAAS_HUPIPAY_APPID      虎皮椒应用 ID（必填）
+      JZ_SAAS_HUPIPAY_APPSECRET  虎皮椒应用密钥（敏感，必须 env 注入）
+      JZ_SAAS_HUPIPAY_GATEWAY    虎皮椒 API 基址（默认 https://api.hupipay.com）
+      JZ_SAAS_HUPIPAY_NOTIFY     支付通知地址（异步回调，留空则仅走主动查单）
+      JZ_SAAS_HUPIPAY_RETURN     支付成功跳转地址（完整 https URL）
+
+    鉴权方式：HMAC-SHA256 签名（appId + timestamp + nonce + body）
+    """
+
+    name = "hupipay"
+
+    DEFAULT_GATEWAY = "https://api.hupipay.com"
+
+    def _cred(self):
+        return {
+            "appid": _secret("JZ_SAAS_HUPIPAY_APPID"),
+            "appsecret": _secret("JZ_SAAS_HUPIPAY_APPSECRET"),
+            "gateway": os.environ.get("JZ_SAAS_HUPIPAY_GATEWAY", self.DEFAULT_GATEWAY),
+            "notify": os.environ.get("JZ_SAAS_HUPIPAY_NOTIFY", ""),
+            "return_url": os.environ.get("JZ_SAAS_HUPIPAY_RETURN", ""),
+        }
+
+    def _sign(self, payload: dict, secret: str) -> str:
+        """HMAC-SHA256 签名：按 key 排序拼接后 HMAC-SHA256(secret, body)。"""
+        parts = sorted(payload.items(), key=lambda x: x[0])
+        body = "&".join(f"{k}={v}" for k, v in parts if v is not None)
+        return hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
+
+    def _post(self, path: str, payload: dict):
+        """POST 到虎皮椒 API，带签名，返回解析后的 dict。"""
+        c = self._cred()
+        secret = c.get("appsecret", "")
+        if not secret:
+            raise ValueError("JZ_SAAS_HUPIPAY_APPSECRET 未配置")
+        # 追加签名必要字段
+        payload["appid"] = c["appid"]
+        payload["timestamp"] = str(int(time.time()))
+        payload["nonce"] = str(uuid.uuid4())[:16]
+        payload["sign"] = self._sign(payload, secret)
+        req = urllib.request.Request(
+            f"{c['gateway']}{path}",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def _missing(self, c: dict):
+        return [k for k in ("appid", "appsecret") if not c.get(k)]
+
+    def create_order(self, tenant_id, amount_cents, product, plan, order_meta=None):
+        """
+        真实下单：调虎皮椒 API 获取支付链接。
+        金额单位：虎皮椒要求"分"（整数），内部统一为"分"。
+        """
+        c = self._cred()
+        missing = self._missing(c)
+        if missing:
+            oid = "hupi_" + str(uuid.uuid4())[:12]
+            return {
+                "order_id": oid,
+                "status": "created_pending_key",
+                "amount_cents": amount_cents,
+                "plan": plan,
+                "product": product,
+                "gateway": "hupipay",
+                "needs_secret": [f"JZ_SAAS_HUPIPAY_{k.upper()}" for k in missing],
+                "note": "appid/appsecret 未配，无法真实下单",
+                "meta": order_meta or {},
+            }
+
+        out_trade_no = "jz_" + str(uuid.uuid4())[:16]
+        payload = {
+            "out_trade_no": out_trade_no,
+            "total_fee": amount_cents,
+            "subject": f"{product}({plan})",
+            "body": f"jianzhu-saas {plan} subscription",
+            "tenant_id": tenant_id,
+        }
+        if c.get("return_url"):
+            payload["return_url"] = c["return_url"]
+        if c.get("notify"):
+            payload["notify_url"] = c["notify"]
+        if order_meta:
+            payload["attach"] = json.dumps(order_meta, ensure_ascii=False)
+
+        try:
+            result = self._post("/payment/create", payload)
+        except Exception as e:
+            return {
+                "order_id": out_trade_no,
+                "status": "gateway_error",
+                "amount_cents": amount_cents,
+                "plan": plan,
+                "product": product,
+                "gateway": "hupipay",
+                "error": str(e),
+                "ts": int(time.time()),
+                "meta": order_meta or {},
+            }
+
+        code = result.get("code", -1)
+        if code != 0:
+            return {
+                "order_id": out_trade_no,
+                "status": "gateway_rejected",
+                "amount_cents": amount_cents,
+                "plan": plan,
+                "product": product,
+                "gateway": "hupipay",
+                "code": code,
+                "msg": result.get("message", ""),
+                "ts": int(time.time()),
+                "meta": order_meta or {},
+            }
+
+        data = result.get("data", {})
+        return {
+            "order_id": out_trade_no,
+            "status": "created",
+            "amount_cents": amount_cents,
+            "plan": plan,
+            "product": product,
+            "gateway": "hupipay",
+            "pay_url": data.get("pay_url", data.get("url", "")),
+            "qrcode_url": data.get("qrcode_url", ""),
+            "out_trade_no": out_trade_no,
+            "ts": int(time.time()),
+            "meta": order_meta or {},
+        }
+
+    def query_callback(self, order_id):
+        """虎皮椒订单查询：按 out_trade_no 主动查询。"""
+        c = self._cred()
+        missing = self._missing(c)
+        if missing:
+            return {"order_id": order_id, "status": "pending_key", "paid": False, "note": "appid/appsecret 未配"}
+        payload = {"out_trade_no": order_id}
+        try:
+            result = self._post("/payment/query", payload)
+            code = result.get("code", -1)
+            if code != 0:
+                return {"order_id": order_id, "status": "query_error", "paid": False, "gateway": "hupipay", "code": code, "msg": result.get("message", "")}
+            data = result.get("data", {})
+            paid = data.get("status") in ("paid", "success", "TRADE_SUCCESS")
+            return {"order_id": order_id, "status": data.get("status", "unknown"), "paid": paid, "gateway": "hupipay"}
+        except Exception as e:
+            return {"order_id": order_id, "status": "query_failed", "paid": False, "error": str(e), "gateway": "hupipay"}
+
+    def verify_callback(self, payload: dict) -> bool:
+        """验证虎皮椒异步回调：HMAC-SHA256 验签。"""
+        c = self._cred()
+        if not c.get("appsecret"):
+            return False
+        # 移除 sign 字段后重新计算签名
+        sig = payload.pop("sign", "")
+        expected = self._sign(payload, c["appsecret"])
+        return sig == expected
+
+    def refund(self, order_id, amount_cents, reason=""):
+        """虎皮椒退款。"""
+        c = self._cred()
+        missing = self._missing(c)
+        if missing:
+            return {"order_id": order_id, "ok": False, "note": "appid/appsecret 未配", "gateway": "hupipay"}
+        payload = {"out_trade_no": order_id, "refund_fee": amount_cents}
+        if reason:
+            payload["reason"] = reason
+        try:
+            result = self._post("/payment/refund", payload)
+            ok = result.get("code", -1) == 0
+            return {
+                "order_id": order_id,
+                "ok": ok,
+                "refunded_cents": amount_cents if ok else 0,
+                "reason": reason,
+                "gateway": "hupipay",
+                "code": result.get("code"),
+                "msg": result.get("message", ""),
+            }
+        except Exception as e:
+            return {"order_id": order_id, "ok": False, "error": str(e), "gateway": "hupipay"}
+
+
+register_gateway(HupipayGateway)
+
+
 def get_gateway(name: str = None) -> Gateway:
     """按名字取网关；缺省读环境变量 JZ_SAAS_BILLING_GATEWAY，未设置回退 noop。"""
     name = name or os.environ.get("JZ_SAAS_BILLING_GATEWAY", "noop")
@@ -423,6 +619,12 @@ def handle_callback(payload):
     g = get_gateway()
     # 爱发电回调带 token，先验签
     if isinstance(g, AfdianGateway) and g.verify_callback(payload):
+        res = g.query_callback(payload.get("out_trade_no", payload.get("order_id", "")))
+        if res.get("paid"):
+            _grant_benefit(res.get("tenant_id"), res)
+        return {"ok": True, "callback": res, "verified": True}
+    # 虎皮椒回调带 HMAC-SHA256 签名，先验签
+    if isinstance(g, HupipayGateway) and g.verify_callback(payload):
         res = g.query_callback(payload.get("out_trade_no", payload.get("order_id", "")))
         if res.get("paid"):
             _grant_benefit(res.get("tenant_id"), res)
