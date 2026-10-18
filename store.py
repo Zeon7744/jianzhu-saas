@@ -46,7 +46,23 @@ CREATE TABLE IF NOT EXISTS usage_events (
     ts          REAL,
     credit_cost INTEGER NOT NULL DEFAULT 1
 );
+CREATE TABLE IF NOT EXISTS tenant_rights (
+    tenant_id   TEXT PRIMARY KEY,
+    plan        TEXT NOT NULL DEFAULT 'free',
+    monthly_quota INTEGER NOT NULL DEFAULT 0,
+    report_level TEXT NOT NULL DEFAULT 'basic',
+    seats       INTEGER NOT NULL DEFAULT 1,
+    updated     REAL
+);
 """
+
+# Pro 权益映射表（产品层定字段，编程专家落库）
+# 1000 次/月 + 完整报告 + 3 人协作
+PRO_RIGHTS = {
+    "free":       {"monthly_quota": 100,   "report_level": "basic",  "seats": 1},
+    "pro":        {"monthly_quota": 1000,  "report_level": "full",   "seats": 3},
+    "enterprise": {"monthly_quota": 10**9, "report_level": "full",   "seats": 10},
+}
 
 
 def conn():

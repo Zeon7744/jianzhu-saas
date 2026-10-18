@@ -6,8 +6,8 @@
   - NoopGateway       : MVP 占位，不扣款
   - WxPayGateway      : 微信商户（企业主体，JSAPI/H5 下单 + 回调验签 + 退款）
   - AishouqianGateway : 爱收钱聚合（MVP 门槛最低，二维码收银台）
-  - HuPijiaoGateway   : 虎皮椒（个人主体 10 分钟开通，H5/QR 收款，费率 ~0.6%）
-选择：环境变量 JZ_SAAS_BILLING_GATEWAY=noop|wepay|aishouqian|xunhupay（缺省 noop）
+  - AfdianGateway     : 爱发电（个人创作者 10 分钟开通，API 查订单 + Webhook 回调，无需备案域名）
+选择：环境变量 JZ_SAAS_BILLING_GATEWAY=noop|wepay|aishouqian|afdian（缺省 noop）
 所有密钥走环境变量，不落代码。
 """
 import os
@@ -195,54 +195,42 @@ class AishouqianGateway(Gateway):
         return {"order_id": order_id, "ok": bool(c.get("mch_no")), "refunded_cents": amount_cents, "reason": reason, "gateway": "aishouqian"}
 
 
-class HuPijiaoGateway(Gateway):
+class AfdianGateway(Gateway):
     """
-    虎皮椒真实网关：个人主体 10 分钟开通，H5/QR 收款，费率 ~0.6%。
-    API 文档：https://www.xunhupay.com/doc/api/pay.html
-    开通：注册 xunhupay.com → 个人商户实名 → 拿 appid + appsecret
+    爱发电真实网关（个人/团队均可开通，token 鉴权，无域名强制要求）。
+    API 文档：https://afdian.com/api-doc
+    开通：注册 afdian.com → 个人开发者 → 控制台「API token」生成 token
 
     环境变量：
-      JZ_SAAS_XUNHU_APPID          虎皮椒 APPID（必填）
-      JZ_SAAS_XUNHU_APPSECRET      虎皮椒 APPSECRET（必填）
-      JZ_SAAS_XUNHU_GATEWAY        网关地址（默认 https://api.xunhupay.com/payment/do.html）
-      JZ_SAAS_XUNHU_NOTIFY         异步回调地址（公网可达 HTTPS URL，必填）
-      JZ_SAAS_XUNHU_RETURN         同步跳转地址（支付后浏览器跳回，可选）
-      JZ_SAAS_XUNHU_PLUGINS        插件标识（可选）
+      JZ_SAAS_AFDIAN_USER        爱发电 user_id（公开展示名，可入库）
+      JZ_SAAS_AFDIAN_TOKEN       爱发电 API token（敏感，必须 env 注入，不入库）
+      JZ_SAAS_AFDIAN_RETURN      支付成功跳转地址（完整 https URL，建议 Zeon7744.github.io/jianzhu-saas/hpj/success）
+      JZ_SAAS_AFDIAN_BASE        爱发电 API 基址（默认 https://afdian.com/api）
 
-    签名算法：
-      1. 所有非空参数按参数名 ASCII 升序排序
-      2. 拼接为 key1=value1&key2=value2...（空值跳过）
-      3. 末尾直接拼接 APPSECRET（无连接符）
-      4. MD5 取 32 位小写
+    鉴权方式：请求体带 token 字段（非 MD5 签名），爱发电按 token 验证。
     """
 
-    name = "xunhupay"
+    name = "afdian"
 
-    DEFAULT_GATEWAY = "https://api.xunhupay.com/payment/do.html"
-    BACKUP_GATEWAY = "https://api.dpweixin.com/payment/do.html"
+    DEFAULT_BASE = "https://afdian.com/api"
 
     def _cred(self):
         return {
-            "appid": _secret("JZ_SAAS_XUNHU_APPID"),
-            "appsecret": _secret("JZ_SAAS_XUNHU_APPSECRET"),
-            "gateway": os.environ.get("JZ_SAAS_XUNHU_GATEWAY", self.DEFAULT_GATEWAY),
-            "notify": os.environ.get("JZ_SAAS_XUNHU_NOTIFY", ""),
-            "return_url": os.environ.get("JZ_SAAS_XUNHU_RETURN", ""),
-            "plugins": os.environ.get("JZ_SAAS_XUNHU_PLUGINS", "jianzhu-saas"),
+            "user_id": os.environ.get("JZ_SAAS_AFDIAN_USER", ""),
+            "token": _secret("JZ_SAAS_AFDIAN_TOKEN"),
+            "base": os.environ.get("JZ_SAAS_AFDIAN_BASE", self.DEFAULT_BASE),
+            "return_url": os.environ.get("JZ_SAAS_AFDIAN_RETURN", ""),
         }
 
-    @staticmethod
-    def _hash(params: dict, appsecret: str) -> str:
-        """虎皮椒 MD5 签名：非空参数按 ASCII 排序拼接 + 拼接 appsecret → MD5 32 位小写。"""
-        filtered = {k: v for k, v in params.items() if k != "hash" and v not in (None, "")}
-        string_a = "&".join(f"{k}={v}" for k, v in sorted(filtered.items(), key=lambda x: x[0]))
-        return hashlib.md5((string_a + appsecret).encode("utf-8")).hexdigest()
-
-    def _post(self, gateway_url: str, payload: dict):
-        """POST JSON 到虎皮椒网关，返回解析后的 dict。"""
+    def _post(self, path: str, payload: dict):
+        """POST 到爱发电 API，token 放请求体，返回解析后的 dict。"""
+        c = self._cred()
+        body = dict(payload)
+        if c.get("token"):
+            body["token"] = c["token"]
         req = urllib.request.Request(
-            gateway_url,
-            data=json.dumps(payload).encode("utf-8"),
+            f"{c['base']}{path}",
+            data=json.dumps(body).encode("utf-8"),
             headers={"Content-Type": "application/json"},
             method="POST",
         )
@@ -250,192 +238,143 @@ class HuPijiaoGateway(Gateway):
             return json.loads(resp.read().decode("utf-8"))
 
     def _missing(self, c: dict):
-        return [k for k in ("appid", "appsecret") if not c.get(k)]
+        return [k for k in ("user_id", "token") if not c.get(k)]
 
     def create_order(self, tenant_id, amount_cents, product, plan, order_meta=None):
         """
-        真实下单：调虎皮椒 API 获取支付链接（H5 url / PC url_qrcode）。
-        金额单位：接口要求"元"（decimal），内部统一为"分"。
+        真实下单：调爱发电 API 获取支付链接。
+        金额单位：爱发电要求"元"（两位小数 decimal），内部统一为"分"。
         """
         c = self._cred()
         missing = self._missing(c)
         if missing:
-            oid = "xunhu_" + str(uuid.uuid4())[:12]
+            oid = "afdian_" + str(uuid.uuid4())[:12]
             return {
                 "order_id": oid,
                 "status": "created_pending_key",
                 "amount_cents": amount_cents,
                 "plan": plan,
                 "product": product,
-                "gateway": "xunhupay",
-                "needs_secret": [f"JZ_SAAS_XUNHU_{k.upper()}" for k in missing],
-                "note": "appid/appsecret 未配，无法真实下单",
+                "gateway": "afdian",
+                "needs_secret": [f"JZ_SAAS_AFDIAN_{k.upper()}" for k in missing],
+                "note": "user_id/token 未配，无法真实下单",
                 "meta": order_meta or {},
             }
 
-        # 金额转换：分 → 元（虎皮椒要求元，两位小数）
-        total_fee = round(amount_cents / 100.0, 2)
-        trade_order_id = "jz_" + str(uuid.uuid4())[:16]
-        nonce_str = str(uuid.uuid4().int)[:32]
-
-        params = {
-            "version": "1.1",
-            "appid": c["appid"],
-            "trade_order_id": trade_order_id,
-            "total_fee": str(total_fee),
-            "title": f"{product}({plan})"[:42],  # 虎皮椒限制 42 个汉字
-            "time": str(int(time.time())),
-            "notify_url": c.get("notify", ""),
-            "nonce_str": nonce_str,
+        # 金额转换：分 → 元（爱发电要求元，两位小数）
+        price = round(amount_cents / 100.0, 2)
+        out_trade_no = "jz_" + str(uuid.uuid4())[:16]
+        payload = {
+            "user_id": c["user_id"],
+            "price": str(price),
+            "name": f"{product}({plan})"[:42],
+            "out_trade_no": out_trade_no,
         }
-        # 可选参数
         if c.get("return_url"):
-            params["return_url"] = c["return_url"]
-        if c.get("plugins"):
-            params["plugins"] = c["plugins"]
+            payload["return_url"] = c["return_url"]
         if order_meta:
-            params["attach"] = json.dumps(order_meta, ensure_ascii=False)
+            payload["attach"] = json.dumps(order_meta, ensure_ascii=False)
 
-        # 签名
-        params["hash"] = self._hash(params, c["appsecret"])
-
-        # 真实调用
-        gw = c.get("gateway") or self.DEFAULT_GATEWAY
         try:
-            result = self._post(gw, params)
+            result = self._post("/payment/create", payload)
         except Exception as e:
             return {
-                "order_id": trade_order_id,
+                "order_id": out_trade_no,
                 "status": "gateway_error",
                 "amount_cents": amount_cents,
                 "plan": plan,
                 "product": product,
-                "gateway": "xunhupay",
+                "gateway": "afdian",
                 "error": str(e),
                 "ts": int(time.time()),
                 "meta": order_meta or {},
             }
 
-        errcode = result.get("errcode", -1)
-        if errcode != 0:
+        code = result.get("code", -1)
+        if code != 0:
             return {
-                "order_id": trade_order_id,
+                "order_id": out_trade_no,
                 "status": "gateway_rejected",
                 "amount_cents": amount_cents,
                 "plan": plan,
                 "product": product,
-                "gateway": "xunhupay",
-                "errcode": errcode,
-                "errmsg": result.get("errmsg", ""),
+                "gateway": "afdian",
+                "code": code,
+                "msg": result.get("message", ""),
                 "ts": int(time.time()),
                 "meta": order_meta or {},
             }
 
-        # 成功：返回支付链接
+        data = result.get("data", {})
         return {
-            "order_id": trade_order_id,
+            "order_id": out_trade_no,
             "status": "created",
             "amount_cents": amount_cents,
             "plan": plan,
             "product": product,
-            "gateway": "xunhupay",
-            "pay_url": result.get("url", ""),          # 手机端 H5 支付链接
-            "qrcode_url": result.get("url_qrcode", ""),  # PC 端二维码
-            "trade_order_id": trade_order_id,
+            "gateway": "afdian",
+            "pay_url": data.get("url", ""),
+            "qrcode_url": data.get("qrcode_url", ""),
+            "out_trade_no": out_trade_no,
             "ts": int(time.time()),
             "meta": order_meta or {},
         }
 
     def query_callback(self, order_id):
-        """
-        虎皮椒回调/查询：
-        - 异步回调：虎皮椒 POST 到 notify_url，验签后发放权益
-        - 主动查询：调查询接口（doc/api/search.html）
-        当前返回结构供上层逻辑使用。
-        """
+        """爱发电订单查询：按 out_trade_no 主动查询。"""
         c = self._cred()
         missing = self._missing(c)
         if missing:
-            return {"order_id": order_id, "status": "pending_key", "paid": False, "note": "appid/appsecret 未配"}
-
-        # 虎皮椒回调验签：虎皮椒侧会带上 hash 参数，用同一算法验证
-        # 主动查询（需配 JZ_SAAS_XUNHU_QUERY_GATEWAY，默认同下单网关）
-        # 查询接口参数：appid + trade_order_id + nonce_str + hash
-        nonce_str = str(uuid.uuid4().int)[:32]
-        params = {
-            "version": "1.1",
-            "appid": c["appid"],
-            "trade_order_id": order_id,
-            "nonce_str": nonce_str,
-        }
-        params["hash"] = self._hash(params, c["appsecret"])
-        gw = c.get("gateway") or self.DEFAULT_GATEWAY
-
+            return {"order_id": order_id, "status": "pending_key", "paid": False, "note": "user_id/token 未配"}
+        payload = {"user_id": c["user_id"], "out_trade_no": order_id}
         try:
-            result = self._post(gw, params)
-            errcode = result.get("errcode", -1)
-            if errcode != 0:
-                return {"order_id": order_id, "status": "query_error", "paid": False, "errcode": errcode, "errmsg": result.get("errmsg", "")}
-            # 虎皮椒查询返回 status: OD=已支付 CD=已退款 RD=退款中 UD=退款失败
-            paid = result.get("status") == "OD"
-            return {"order_id": order_id, "status": result.get("status", "unknown"), "paid": paid}
+            result = self._post("/payment/query", payload)
+            code = result.get("code", -1)
+            if code != 0:
+                return {"order_id": order_id, "status": "query_error", "paid": False, "gateway": "afdian", "code": code, "msg": result.get("message", "")}
+            data = result.get("data", {})
+            paid = data.get("status") in ("paid", "success")
+            return {"order_id": order_id, "status": data.get("status", "unknown"), "paid": paid, "gateway": "afdian"}
         except Exception as e:
-            return {"order_id": order_id, "status": "query_failed", "paid": False, "error": str(e)}
+            return {"order_id": order_id, "status": "query_failed", "paid": False, "error": str(e), "gateway": "afdian"}
 
     def verify_callback(self, payload: dict) -> bool:
-        """验证虎皮椒异步回调签名。"""
+        """验证爱发电异步回调：按回调 token 匹配当前配置的 token。"""
         c = self._cred()
-        if not c.get("appsecret"):
+        if not c.get("token"):
             return False
-        hash_received = payload.pop("hash", "")
-        calc = self._hash(payload, c["appsecret"])
-        return hashlib.md5(calc.encode()).hexdigest() == hashlib.md5(hash_received.encode()).hexdigest() or calc == hash_received
+        return payload.get("token") == c["token"]
 
     def refund(self, order_id, amount_cents, reason=""):
-        """
-        虎皮椒退款（doc/api/refund.html）：
-        参数：appid + trade_order_id + refund_fee(元) + nonce_str + hash
-        """
+        """爱发电退款。"""
         c = self._cred()
         missing = self._missing(c)
         if missing:
-            return {"order_id": order_id, "ok": False, "note": "appid/appsecret 未配", "gateway": "xunhupay"}
-
-        refund_fee = round(amount_cents / 100.0, 2)
-        nonce_str = str(uuid.uuid4().int)[:32]
-        params = {
-            "version": "1.1",
-            "appid": c["appid"],
-            "trade_order_id": order_id,
-            "refund_fee": str(refund_fee),
-            "nonce_str": nonce_str,
-        }
+            return {"order_id": order_id, "ok": False, "note": "user_id/token 未配", "gateway": "afdian"}
+        price = round(amount_cents / 100.0, 2)
+        payload = {"user_id": c["user_id"], "out_trade_no": order_id, "price": str(price)}
         if reason:
-            params["reason"] = reason
-        params["hash"] = self._hash(params, c["appsecret"])
-        gw = c.get("gateway") or self.DEFAULT_GATEWAY
-
+            payload["reason"] = reason
         try:
-            result = self._post(gw, params)
-            errcode = result.get("errcode", -1)
-            ok = errcode == 0
+            result = self._post("/payment/refund", payload)
+            ok = result.get("code", -1) == 0
             return {
                 "order_id": order_id,
                 "ok": ok,
                 "refunded_cents": amount_cents if ok else 0,
                 "reason": reason,
-                "gateway": "xunhupay",
-                "errcode": errcode,
-                "errmsg": result.get("errmsg", ""),
+                "gateway": "afdian",
+                "code": result.get("code"),
+                "msg": result.get("message", ""),
             }
         except Exception as e:
-            return {"order_id": order_id, "ok": False, "error": str(e), "gateway": "xunhupay"}
+            return {"order_id": order_id, "ok": False, "error": str(e), "gateway": "afdian"}
 
 
 register_gateway(NoopGateway)
 register_gateway(WxPayGateway)
 register_gateway(AishouqianGateway)
-register_gateway(HuPijiaoGateway)
+register_gateway(AfdianGateway)
 
 
 def get_gateway(name: str = None) -> Gateway:
@@ -482,9 +421,9 @@ def _plan_from_cents(amount_cents):
 def handle_callback(payload):
     """支付平台回调入口：校验后发放/升级套餐。"""
     g = get_gateway()
-    # 虎皮椒回调带完整签名，先验签
-    if isinstance(g, HuPijiaoGateway) and g.verify_callback(payload):
-        res = g.query_callback(payload.get("trade_order_id", payload.get("order_id", "")))
+    # 爱发电回调带 token，先验签
+    if isinstance(g, AfdianGateway) and g.verify_callback(payload):
+        res = g.query_callback(payload.get("out_trade_no", payload.get("order_id", "")))
         if res.get("paid"):
             _grant_benefit(res.get("tenant_id"), res)
         return {"ok": True, "callback": res, "verified": True}
