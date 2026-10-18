@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>支付成功 - 建检智管</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { background: white; border-radius: 16px; padding: 40px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .icon { width: 80px; height: 80px; background: #4caf50; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+    .icon svg { width: 40px; height: 40px; fill: white; }
+    h1 { color: #333; margin-bottom: 12px; font-size: 28px; }
+    p { color: #666; margin-bottom: 24px; line-height: 1.6; }
+    .order-info { background: #f5f5f5; border-radius: 8px; padding: 16px; margin-bottom: 24px; text-align: left; }
+    .order-info div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0; }
+    .order-info div:last-child { border-bottom: none; }
+    .order-info .label { color: #999; }
+    .order-info .value { color: #333; font-weight: 500; }
+    .btn { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+    .hint { margin-top: 24px; font-size: 14px; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </div>
+    <h1>支付成功！</h1>
+    <p>感谢您的订阅，Pro 权益已激活。<br>您现在可以解锁全部功能。</p>
+    <div class="order-info">
+      <div><span class="label">订单号</span><span class="value" id="orderId">--</span></div>
+      <div><span class="label">金额</span><span class="value" id="amount">¥199/月</span></div>
+      <div><span class="label">权益</span><span class="value">Pro 会员</span></div>
+      <div><span class="label">状态</span><span class="value" style="color:#4caf50">已激活</span></div>
+    </div>
+    <a href="/" class="btn">返回控制台</a>
+    <p class="hint">如有问题，请联系客服或查看邮件确认函</p>
+  </div>
+  <script>
+    // 从 URL 参数读取订单信息
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id') || params.get('out_trade_no') || '未知';
+    const amount = params.get('amount') || '¥199';
+    document.getElementById('orderId').textContent = orderId;
+    document.getElementById('amount').textContent = amount;
+  </script>
+</body>
+</html>
