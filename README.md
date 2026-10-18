@@ -61,3 +61,35 @@ python3 -m pip install -r requirements.txt
 ## 变现路径
 免费 → Pro 订阅 → 企业定制；收款走爱发电/爱收钱/微信商户网关（billing.py），权益发放待联调。
 > 定价与赞助：见仓库内 pricing.md / FUNDING.yml（若有）。
+
+---
+
+## 🏢 企业版功能（来自 jianzhu-agent 合并）
+
+以下功能已从 `jianzhu-agent` 合并入企业版：
+
+### 新增能力
+- **ReAct Agent 思维引擎**：推理+执行循环，支持自动查询数据库、搜索知识库、风险检查
+- **多 Agent 协作**：智管/智财/智项/智检/智安/智石六大专业 Agent
+- **知识库检索**：语义检索 + 关键词匹配混合搜索
+- **Agent 协作编排**：多 Agent 任务分配与结果汇总
+
+### 企业版 Demo
+```bash
+# 端到端自动化巡检闭环
+python demo_pipeline.py
+```
+
+### 企业版调用示例
+```python
+from src.enterprise.agent import create_agent, ReActAgent
+
+# 创建专业 Agent
+agent = create_agent("智检")  # 检测质量 Agent
+
+# ReAct 推理
+react = ReActAgent(agent)
+result = react.run("帮我分析最近的检测异常报告")
+```
+
+> 📦 企业版功能需 Pro/企业订阅解锁；免费版仅含基础 API。
