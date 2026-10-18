@@ -12,7 +12,7 @@ P0 改造：
 7. 检测记录台账入口（GET /ledger）
 8. Free 用户付费墙（导出完整报告需 Pro）
 9. 销售话术落地页展示
-10. 虎皮椒 HupipayGateway 收款闭环
+10. 爱收钱/爱发电网关收款闭环
 """
 import os
 import json
@@ -442,5 +442,5 @@ async function loadLedger(){
 if __name__ == "__main__":
     port = int(os.environ.get("JZ_SAAS_PORT", 8080))
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
-    print(f"jianzhu-saas API (tenant+jwt+meter+billing+Hupipay) running on :{port}")
+    print(f"jianzhu-saas API (tenant+jwt+meter+billing+billing+爱收钱/爱发电) running on :{port}")
     server.serve_forever()
