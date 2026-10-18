@@ -76,6 +76,21 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"tenant": t, "role": claims.get("role")})
         if self.path == "/billing/credit":
             return self._send(200, {"tenant_id": tid, "credits": t["credits"], "plan": t["plan"]})
+        if self.path == "/billing/rights":
+            r = tsvc.get_rights(tid)
+            if r is None:
+                tsvc.apply_plan_rights(tid, t.get("plan", "free"))
+                r = tsvc.get_rights(tid)
+            return self._send(200, {
+                "tenant_id": tid, "plan": t["plan"], "credits": t["credits"],
+                "rights": r, "monthly_quota": r["monthly_quota"] if r else 100,
+                "report_level": r["report_level"] if r else "basic", "seats": r["seats"] if r else 1,
+            })
+        if self.path.startswith("/billing/order/"):
+            oid = self.path.split("/")[-1]
+            g = billing.get_gateway()
+            res = g.query_callback(oid)
+            return self._send(200, {"order_id": oid, **res})
         # 管理后台：列出所有租户（仅 admin）
         if self.path == "/admin/tenants":
             role = claims.get("role", "operator")

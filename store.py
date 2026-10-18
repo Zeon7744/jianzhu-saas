@@ -92,6 +92,7 @@ class TenantService:
             (tenant_id, name, plan, self.PLAN_CREDIT.get(plan, 100), app_secret, time.time()),
         )
         c.commit()
+        self.apply_plan_rights(tenant_id, plan)
         return self.get(tenant_id)
 
     def get(self, tenant_id):
@@ -138,8 +139,42 @@ class TenantService:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def apply_plan_rights(self, tenant_id, plan):
+        """把 Pro 权益映射表落到 tenant_rights 表（幂等 upsert）。"""
+        rights = PRO_RIGHTS.get(plan, PRO_RIGHTS["free"])
+        c = conn()
+        c.execute(
+            "INSERT INTO tenant_rights (tenant_id, plan, monthly_quota, report_level, seats, updated) "
+            "VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(tenant_id) DO UPDATE SET "
+            "plan=excluded.plan, monthly_quota=excluded.monthly_quota, "
+            "report_level=excluded.report_level, seats=excluded.seats, updated=excluded.updated",
+            (tenant_id, plan, rights["monthly_quota"], rights["report_level"], rights["seats"], time.time()),
+        )
+        c.commit()
+
+    def get_rights(self, tenant_id):
+        """查 tenant_rights 行；不存在则返回 None。"""
+        c = conn()
+        row = c.execute("SELECT * FROM tenant_rights WHERE tenant_id=?", (tenant_id,)).fetchone()
+        return dict(row) if row else None
+
+    def check_quota(self, tenant_id, monthly_used):
+        """配额检查：(allowed, remaining, quota)。enterprise 不限。"""
+        r = self.get_rights(tenant_id) or {"monthly_quota": 10**9}
+        quota = r["monthly_quota"]
+        remain = max(0, quota - int(monthly_used))
+        return (remain > 0 or quota >= 10**9), remain, quota
+
+    def can_use_report_level(self, tenant_id, level):
+        """报告级别权限：full 需要 pro/enterprise。"""
+        r = self.get_rights(tenant_id)
+        if not r:
+            return False
+        return r["report_level"] == "full" or level == "basic"
+
     def set_plan(self, tenant_id, plan, credits=None):
-        """升降级套餐。credits 显式传则覆盖，否则用新套餐默认额度。"""
+        """升降级套餐。credits 显式传则覆盖，否则用新套餐默认额度。权益同步落库。"""
         if plan not in self.PLAN_CREDIT:
             return False
         new_credit = self.PLAN_CREDIT[plan] if credits is None else int(credits)
@@ -149,6 +184,7 @@ class TenantService:
             (plan, new_credit, tenant_id),
         )
         c.commit()
+        self.apply_plan_rights(tenant_id, plan)
         return self.get(tenant_id)
 
     def topup_credit(self, tenant_id, amount):
