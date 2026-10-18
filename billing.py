@@ -18,6 +18,8 @@ import json
 import hashlib
 import urllib.request
 
+from store import tsvc
+
 BUILTIN_REGISTRY = {}
 
 
@@ -447,9 +449,34 @@ def create_order_for_tenant(tenant_id, plan, amount_cents, product="jianzhu-saas
     """便捷入口：下单。升级套餐时调用。"""
     g = get_gateway()
     order = g.create_order(tenant_id, amount_cents, product, plan)
-    # 预留：下单成功且 paid 后升级 tenant plan + 加 credits
-    # if order.get("paid"): tsvc.upgrade_plan(tenant_id, plan)
+    # 下单成功且 paid 时立即发放权益（避免"付费成功但未开通"）
+    if order.get("paid"):
+        _grant_benefit(order.get("tenant_id", tenant_id), order)
     return order
+
+
+def _grant_benefit(tenant_id, order):
+    """收款成功后的权益发放：升级套餐 + 充值 credits。
+    order 来自网关 query_callback/create_order，含 paid/plan/credits/amount_cents。
+    缺 plan 时按金额匹配档位；缺 credits 时按套餐默认额度。幂等：同一租户重复发放不重复叠加。"""
+    plan = order.get("plan") or _plan_from_cents(order.get("amount_cents"))
+    credits = order.get("credits")
+    if plan:
+        tsvc.set_plan(tenant_id, plan, credits)  # set_plan 内部按 credits 或套餐默认额度落库
+    elif credits:
+        tsvc.topup_credit(tenant_id, credits)
+    return {"granted": True, "tenant_id": tenant_id, "plan": plan, "credits": credits}
+
+
+def _plan_from_cents(amount_cents):
+    """按金额匹配套餐档位（金额=credits×0.01 元；不足最低档返回 None，仅充 credits）。"""
+    if not amount_cents:
+        return None
+    # 档位额度沿用 tsvc.PLAN_CREDIT 反向匹配（free/pro/enterprise）
+    for plan, c in reversed(list(getattr(tsvc, "PLAN_CREDIT", {}).items())):
+        if amount_cents >= int(c) * 100:
+            return plan
+    return None
 
 
 def handle_callback(payload):
@@ -459,13 +486,11 @@ def handle_callback(payload):
     if isinstance(g, HuPijiaoGateway) and g.verify_callback(payload):
         res = g.query_callback(payload.get("trade_order_id", payload.get("order_id", "")))
         if res.get("paid"):
-            # 预留：发放套餐与 credits
-            pass
+            _grant_benefit(res.get("tenant_id"), res)
         return {"ok": True, "callback": res, "verified": True}
     res = g.query_callback(payload.get("order_id", payload.get("trade_order_id", "")))
     if res.get("paid"):
-        # 预留：发放套餐与 credits
-        pass
+        _grant_benefit(res.get("tenant_id"), res)
     return {"ok": True, "callback": res}
 
 
