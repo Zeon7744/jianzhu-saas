@@ -429,10 +429,11 @@ def handle_callback(payload):
         if res.get("paid"):
             _grant_benefit(res.get("tenant_id"), res)
         return {"ok": True, "callback": res, "verified": True}
-    res = g.query_callback(payload.get("order_id", payload.get("trade_order_id", "")))
-    if res.get("paid"):
-        _grant_benefit(res.get("tenant_id"), res)
-    return {"ok": True, "callback": res}
+    else:
+        res = g.query_callback(payload.get("order_id", payload.get("trade_order_id", "")))
+        if res.get("paid"):
+            _grant_benefit(res.get("tenant_id"), res)
+        return {"ok": True, "callback": res}
 
 
 def refund(order_id, amount_cents, reason="user_request"):
