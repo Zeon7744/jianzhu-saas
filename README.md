@@ -42,13 +42,13 @@ curl -X POST :8080/api/assessments -H "Authorization: Bearer <token>" \
 
 ## 🚀 免费 → Pro → 企业（变现入口）
 
-免费=100 次评估/月；Pro=无限评估+PDF 报告导出；企业=私有部署+定制算法
+免费=100 次评估/月；Pro=¥99/月（无限评估+PDF）；企业=¥999/月（私有部署+定制）
 
 - **免费**：立即 [安装/克隆] 使用，命中配额即可升级。
-- **Pro**：[Gitee Pro 订阅](https://gitee.com/Zeon7744) 解锁高级能力。
-- **企业**：私有部署 / 定制需求 → 见 `pricing.md`，或联系商务（GitHub Issues / Gitee）。
+- **Pro（¥99/月）**：[爱发电订阅](https://afdian.net/@Zeon7744) 解锁高级能力。
+- **企业（¥999/月）**：私有部署 / 定制需求 → [联系商务](https://afdian.net/@Zeon7744)。
 
-> 详细定价与 SKU 见 [pricing.md](pricing.md) ｜ 支持项目见 [FUNDING.yml](FUNDING.yml)
+> 详细定价见 [pricing.md](pricing.md)
 
 ---
 
@@ -59,8 +59,8 @@ python3 -m pip install -r requirements.txt
 ```
 
 ## 变现路径
-免费 → Pro 订阅 → 企业定制；收款走爱发电/爱收钱/微信商户网关（billing.py），权益发放待联调。
-> 定价与赞助：见仓库内 pricing.md / FUNDING.yml（若有）。
+免费 → Pro（¥99/月）→ 企业（¥999/月）；收款走爱发电（主渠道）/爱收钱/微信商户网关（billing.py）。
+> 定价：见 [pricing.md](pricing.md) | 订阅：[爱发电 @Zeon7744](https://afdian.net/@Zeon7744)
 
 ---
 
@@ -93,3 +93,18 @@ result = react.run("帮我分析最近的检测异常报告")
 ```
 
 > 📦 企业版功能需 Pro/企业订阅解锁；免费版仅含基础 API。
+
+
+---
+
+## 💰 订阅支持
+
+| 档位 | 价格 | 核心权益 |
+|------|------|----------|
+| 免费 | ¥0 | 100 次评估/月 |
+| Pro | ¥99/月 | 无限评估 + PDF 报告 |
+| 企业 | ¥999/月 | 私有部署 + 定制算法 |
+
+👉 **[立即订阅 — 爱发电](https://afdian.net/@Zeon7744)**（支付宝 / 微信支付）
+
+> 详细定价见 [pricing.md](pricing.md)
