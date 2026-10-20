@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         platform: [gitee, gitcode]
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,8 +24,8 @@ jobs:
         run: |
           REPO=${{ github.event.repository.name }}
           git remote add gitee https://oauth2:${GITEE_TOKEN}@gitee.com/Zeon7744/${REPO}.git 2>/dev/null || true
-          git push gitee --all --force
-          git push gitee --tags --force
+          git push gitee --all --force || echo "Gitee mirror failed"
+          git push gitee --tags --force || echo "Gitee tags mirror failed"
 
       - name: Mirror to GitCode
         if: matrix.platform == 'gitcode'
@@ -32,6 +33,7 @@ jobs:
           GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
         run: |
           REPO=${{ github.event.repository.name }}
+          # GitCode may block automated requests; log and continue
           git remote add gitcode https://${GITCODE_TOKEN}@gitcode.net/Zeon7744/${REPO}.git 2>/dev/null || true
-          git push gitcode --all --force
-          git push gitcode --tags --force
+          git push gitcode --all --force || echo "GitCode mirror skipped (WAF likely blocking)"
+          git push gitcode --tags --force || echo "GitCode tags mirror skipped"
