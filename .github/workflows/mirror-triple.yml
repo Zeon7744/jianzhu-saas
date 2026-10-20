@@ -1,0 +1,37 @@
+name: Mirror to Gitee & GitCode
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [gitee, gitcode]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror to Gitee
+        if: matrix.platform == 'gitee'
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          REPO=${{ github.event.repository.name }}
+          git remote add gitee https://oauth2:${GITEE_TOKEN}@gitee.com/Zeon7744/${REPO}.git 2>/dev/null || true
+          git push gitee --all --force
+          git push gitee --tags --force
+
+      - name: Mirror to GitCode
+        if: matrix.platform == 'gitcode'
+        env:
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+        run: |
+          REPO=${{ github.event.repository.name }}
+          git remote add gitcode https://${GITCODE_TOKEN}@gitcode.net/Zeon7744/${REPO}.git 2>/dev/null || true
+          git push gitcode --all --force
+          git push gitcode --tags --force
