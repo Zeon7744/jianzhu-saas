@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'hpj/**'
       - 'landing/**'
       - '.github/workflows/pages.yml'
   schedule:
