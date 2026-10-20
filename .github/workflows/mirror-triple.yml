@@ -36,34 +36,37 @@ jobs:
           set -e
           REPO=${{ github.event.repository.name }}
 
-          # 1. 写入密钥文件并修复格式（兼容 base64 编码或明文）
-          if echo "${GITCODE_SSH_KEY:0:100}" | base64 -d > /dev/null 2>&1 && ! head -1 <<< "${GITCODE_SSH_KEY}" | grep -q 'BEGIN'; then
-            echo "${GITCODE_SSH_KEY}" | base64 -d > ~/.gitcode_ssh_key
+          # 1. 写入密钥文件（兼容 base64 编码或明文 OpenSSH 格式）
+          if [ -z "${GITCODE_SSH_KEY}" ]; then
+            echo "ERROR: GITCODE_SSH_KEY secret is not set. Please add it in repo Settings -> Secrets and variables -> Actions."
+            echo "GitCode SSH mirror skipped."
+            exit 0
+          fi
+          # 判断是否 base64：前100字节可解码 且 明文不含 'BEGIN' 即视为 base64
+          if printf '%s' "${GITCODE_SSH_KEY:0:100}" | base64 -d > /dev/null 2>&1 && ! printf '%s\n' "${GITCODE_SSH_KEY}" | head -1 | grep -q 'BEGIN'; then
+            printf '%s' "${GITCODE_SSH_KEY}" | base64 -d > ~/.gitcode_ssh_key
           else
             printf '%s\n' "${GITCODE_SSH_KEY}" > ~/.gitcode_ssh_key
           fi
           chmod 600 ~/.gitcode_ssh_key
 
-          # 2. 配置 SSH：host 指向 gitcode.net，固定使用该密钥
+          # 2. 配置 SSH：host 指向 gitcode.net，固定使用该密钥（用 printf 避免 heredoc 缩进问题）
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          cat > ~/.ssh/config <<EOF
-          Host gitcode.net
-            HostName gitcode.net
-            Port 22
-            User git
-            IdentityFile ~/.gitcode_ssh_key
-            StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
-            IdentitiesOnly yes
-          EOF
+          printf '%s\n' \
+            'Host gitcode.net' \
+            '  HostName gitcode.net' \
+            '  Port 22' \
+            '  User git' \
+            '  IdentityFile ~/.gitcode_ssh_key' \
+            '  StrictHostKeyChecking no' \
+            '  UserKnownHostsFile /dev/null' \
+            '  IdentitiesOnly yes' \
+            > ~/.ssh/config
           chmod 600 ~/.ssh/config
 
           # 3. 如带 passphrase，注册 askpass 脚本实现非交互解锁
           if [ -n "${GITCODE_PASSPHRASE}" ]; then
-            cat > /usr/local/bin/ssh-askpass.sh <<EOF
-            #!/bin/sh
-            echo "${GITCODE_PASSPHRASE}"
-            EOF
+            printf '%s\n' '#!/bin/sh' "echo \"${GITCODE_PASSPHRASE}\"" > /usr/local/bin/ssh-askpass.sh
             chmod +x /usr/local/bin/ssh-askpass.sh
             export SSH_ASKPASS=/usr/local/bin/ssh-askpass.sh
             export SSH_ASKPASS_REQUIRE=force
@@ -71,9 +74,9 @@ jobs:
           fi
 
           # 4. 测试 SSH 认证
-          ssh -v -T git@gitcode.net 2>&1 | head -5 || true
+          ssh -v -T git@gitcode.net 2>&1 | head -5 || echo "SSH test not conclusive, continuing to push"
 
           # 5. 改为 SSH 远端并推送
           git remote add gitcode git@gitcode.net:Zeon7744/${REPO}.git 2>/dev/null || git remote set-url gitcode git@gitcode.net:Zeon7744/${REPO}.git
-          git push gitcode --all --force || echo "GitCode SSH mirror failed"
-          git push gitcode --tags --force || echo "GitCode SSH tags mirror failed"
+          git push gitcode --all --force || echo "GitCode SSH mirror failed (branch push)"
+          git push gitcode --tags --force || echo "GitCode SSH mirror failed (tags)"
