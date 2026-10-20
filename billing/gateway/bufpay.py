@@ -8,7 +8,10 @@ import uuid
 import json
 import urllib.request
 
-from ..billing import Gateway, register_gateway
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from billing import Gateway, register_gateway
 
 
 class BufPayGateway(Gateway):

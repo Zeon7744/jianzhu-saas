@@ -377,6 +377,31 @@ register_gateway(AishouqianGateway)
 register_gateway(AfdianGateway)
 
 
+# BufPay 网关（个人收款聚合码）
+try:
+    import importlib.util
+    _bufpay_path = os.path.join(os.path.dirname(__file__), "billing", "gateway", "bufpay.py")
+    if os.path.exists(_bufpay_path):
+        _spec = importlib.util.spec_from_file_location("bufpay_mod", _bufpay_path)
+        _bufpay_mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_bufpay_mod)
+        register_gateway(_bufpay_mod.BufPayGateway)
+except Exception:
+    pass  # gateway 目录不存在时跳过
+# 动态加载 gateway 子目录下的其他网关（如 bufpay）
+import os as _os
+_gateway_dir = _os.path.join(_os.path.dirname(__file__), 'gateway')
+if _os.path.isdir(_gateway_dir):
+    for _fname in _os.listdir(_gateway_dir):
+        if _fname.endswith('.py') and not _fname.startswith('__'):
+            _mod_name = _fname[:-3]
+            try:
+                _mod = __import__(f'billing.gateway.{_mod_name}', fromlist=[''])
+                # 触发模块级注册（假设每个网关模块末尾调用 register_gateway）
+            except Exception as _e:
+                pass
+
+
 
 
 def get_gateway(name: str = None) -> Gateway:
