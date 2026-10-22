@@ -7,10 +7,7 @@
   - WxPayGateway      : 微信商户（企业主体，JSAPI/H5 下单 + 回调验签 + 退款）
   - AishouqianGateway : 爱收钱聚合（MVP 门槛最低，二维码收银台）
   - AfdianGateway     : 爱发电（个人创作者 10 分钟开通，API 查订单 + Webhook 回调，无需备案域名）
-  - BufPayGateway     : BufPay 个人收款聚合码（bufpay.com，MD5 签名，4 个环境变量）
-
-多通道共存：爱发电(afdian) 与 BufPay(bufpay) 并存，按 JZ_SAAS_BILLING_GATEWAY 二选一/可切换
-选择：环境变量 JZ_SAAS_BILLING_GATEWAY=noop|wepay|aishouqian|afdian|bufpay（缺省 noop）
+选择：环境变量 JZ_SAAS_BILLING_GATEWAY=noop|wepay|aishouqian|afdian（缺省 noop）
 所有密钥走环境变量，不落代码。
 """
 import os
@@ -446,27 +443,6 @@ register_gateway(NoopGateway)
 register_gateway(WxPayGateway)
 register_gateway(AishouqianGateway)
 register_gateway(AfdianGateway)
-
-
-# BufPay 网关（个人收款聚合码）—— 显式加载 + 显式注册（与爱发电 AfdianGateway 共存，互不覆盖）
-# 根因：根目录既有 billing.py 模块、又有 billing/gateway/ 目录，"billing" 同名冲突，
-#       子包路径 billing.gateway 建不起来（'billing' is not a package）。
-# 修法：用 importlib 按【文件绝对路径】直接加载 bufpay.py（绕开包机制），拿到类后显式注册；失败打可见 warning。
-try:
-    import importlib.util as _ilu
-    _bufpay_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "billing", "gateway", "bufpay.py")
-    if os.path.exists(_bufpay_file):
-        _spec = _ilu.spec_from_file_location("_jz_bufpay_gateway", _bufpay_file)
-        _mod = _ilu.module_from_spec(_spec)
-        _spec.loader.exec_module(_mod)
-        register_gateway(_mod.BufPayGateway)
-    else:
-        import sys as _sys
-        print(f"[billing] 警告：未找到 {_bufpay_file}，BufPay 网关未注册（爱发电 Afdian 不受影响）", file=_sys.stderr)
-except Exception as _e:
-    import sys as _sys
-    print(f"[billing] 警告：BufPay 网关注册失败（爱发电 Afdian 不受影响）: {_e}", file=_sys.stderr)
-
 
 
 
