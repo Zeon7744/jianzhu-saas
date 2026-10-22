@@ -3,232 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>建筑 SaaS - AI 驱动的建筑设计与工程管理</title>
+    <title>轻建筑 SaaS - AI 驱动的建筑风险快评 · ¥39 起</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .gradient-hero {
-            background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%);
+        .hero-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #7f1d1d 100%);
         }
-        .card-hover:hover {
+        .card-glow:hover {
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);
+            border-color: #ef4444;
             transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
-        .pricing-popular {
-            border: 2px solid #3b82f6;
+        .popular-card {
+            border: 2px solid #ef4444;
             position: relative;
         }
-        .pricing-popular::before {
-            content: "最受欢迎";
+        .popular-badge {
             position: absolute;
             top: -12px;
             left: 50%;
             transform: translateX(-50%);
-            background: #3b82f6;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
-            padding: 2px 12px;
+            padding: 2px 16px;
             border-radius: 12px;
             font-size: 12px;
+            font-weight: 600;
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- 🆕 Hero 区：轻建筑 SaaS 品牌首屏 -->
-    <section class="bg-gradient-to-br from-slate-900 via-slate-800 to-red-900 text-white py-16 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10" style="background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 80 80%22><path d=%22M0 0h80v80H0z%22 fill=%22none%22/><path d=%22M0 80L80 0%22 stroke=%22white%22 stroke-width=%220.5%22/></svg>');"></div>
-        <div class="container mx-auto px-6 relative z-10">
-            <div class="text-center mb-10">
-                <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight">轻建筑 SaaS</h1>
-                <p class="text-xl md:text-2xl text-red-300 font-semibold mb-2">对标品茗 1/5 价格 · ¥39 起</p>
-                <p class="text-lg text-blue-200 mb-6">已接入 4 网关 + AI 算量预留</p>
-                <button onclick="document.getElementById('demo-form').scrollIntoView({behavior:'smooth'})" 
-                    class="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-lg font-bold text-lg transition shadow-lg shadow-red-600/30">
-                    🏗️ 免费试用
-                </button>
-            </div>
-            <!-- 三个 Persona 卡片 -->
-            <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-8">
-                <div class="bg-white/10 backdrop-blur rounded-xl p-6 border border-white/20 hover:bg-white/20 transition">
-                    <div class="text-3xl mb-3">👷</div>
-                    <h3 class="font-bold text-lg mb-1">张包工</h3>
-                    <p class="text-blue-200 text-sm">工地现场检测，快速出风险评估报告，甲方催着要</p>
-                    <p class="text-green-300 text-xs mt-2">→ Free 版 3 次/天够用</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur rounded-xl p-6 border border-white/20 hover:bg-white/20 transition">
-                    <div class="text-3xl mb-3">🏗️</div>
-                    <h3 class="font-bold text-lg mb-1">王项目经理</h3>
-                    <p class="text-blue-200 text-sm">多项目并行管理，需要台账+条文引用+团队协作</p>
-                    <p class="text-green-300 text-xs mt-2">→ Pro ¥199/月 不限次</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur rounded-xl p-6 border border-white/20 hover:bg-white/20 transition">
-                    <div class="text-3xl mb-3">🏢</div>
-                    <h3 class="font-bold text-lg mb-1">李团队负责人</h3>
-                    <p class="text-blue-200 text-sm">检测公司/高校实验室，多租户隔离+私有部署+SLA</p>
-                    <p class="text-green-300 text-xs mt-2">→ Team ¥399/月 5 租户</p>
-                </div>
-            </div>
-        </div>
-    </section>
+<body class="bg-gray-50 text-gray-900">
 
-    <!-- 🆕 四网关示意图 -->
-    <section class="py-12 bg-white border-b">
-        <div class="container mx-auto px-6">
-            <h2 class="text-2xl font-bold text-center mb-2">💳 四网关支付已接入</h2>
-            <p class="text-gray-500 text-center mb-8">一个环境变量切换，零代码改动</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
-                    <div class="text-2xl mb-2">🔇</div>
-                    <h4 class="font-bold">Noop</h4>
-                    <p class="text-xs text-gray-500 mt-1">演示占位</p>
-                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
-                </div>
-                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
-                    <div class="text-2xl mb-2">💚</div>
-                    <h4 class="font-bold">微信支付</h4>
-                    <p class="text-xs text-gray-500 mt-1">JSAPI/H5 下单</p>
-                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
-                </div>
-                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
-                    <div class="text-2xl mb-2">💰</div>
-                    <h4 class="font-bold">爱收钱</h4>
-                    <p class="text-xs text-gray-500 mt-1">聚合收银台</p>
-                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
-                </div>
-                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
-                    <div class="text-2xl mb-2">❤️</div>
-                    <h4 class="font-bold">爱发电</h4>
-                    <p class="text-xs text-gray-500 mt-1">个人创作者</p>
-                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
-                </div>
-            </div>
+<!-- ═══ 首屏 Hero ═══ -->
+<section class="hero-gradient text-white py-20 relative overflow-hidden">
+    <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(circle at 30% 50%, rgba(239,68,68,0.3) 0%, transparent 60%);"></div>
+    <div class="container mx-auto px-6 text-center relative z-10">
+        <!-- 一句话价值主张 -->
+        <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-4 py-1.5 text-sm text-red-200 mb-6">
+            <span class="w-2 h-2 rounded-full bg-red-400 pulse-dot"></span>
+            对标品茗 1/5 价格 · 已接入 4 大支付网关
         </div>
-    </section>
-
-    <!-- Hero Section (原有) -->
-    <section class="gradient-hero text-white py-20">
-        <div class="container mx-auto px-6 text-center">
-            <h1 class="text-4xl md:text-6xl font-bold mb-6">
-                AI 驱动的建筑设计与工程管理
-            </h1>
-            <p class="text-xl md:text-2xl text-blue-200 mb-8">
-                智能规范查询 · 自动化图纸审查 · 工程数据管理
-            </p>
-            <div class="flex justify-center gap-4">
-                <a href="#pricing" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold transition">
-                    免费试用 7 天
-                </a>
-                <a href="#features" class="bg-transparent border-2 border-white hover:bg-white hover:text-blue-900 text-white px-8 py-3 rounded-lg font-semibold transition">
-                    了解更多
-                </a>
-            </div>
-            <div class="mt-12 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-                <div>
-                    <div class="text-3xl font-bold">500+</div>
-                    <div class="text-blue-200">建筑企业</div>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold">10万+</div>
-                    <div class="text-blue-200">设计图纸</div>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold">99.9%</div>
-                    <div class="text-blue-200">规范覆盖率</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features -->
-    <section id="features" class="py-20">
-        <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center mb-12">核心功能</h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-white p-8 rounded-xl shadow card-hover transition">
-                    <div class="text-blue-500 text-4xl mb-4"><i class="fas fa-book"></i></div>
-                    <h3 class="text-xl font-bold mb-2">AI 规范查询</h3>
-                    <p class="text-gray-600">基于大模型的规范条文智能检索，支持 GB、JGJ 等标准快速查询。</p>
-                </div>
-                <div class="bg-white p-8 rounded-xl shadow card-hover transition">
-                    <div class="text-blue-500 text-4xl mb-4"><i class="fas fa-drafting-compass"></i></div>
-                    <h3 class="text-xl font-bold mb-2">智能图纸审查</h3>
-                    <p class="text-gray-600">自动识别图纸中的规范违反项，生成审查报告。</p>
-                </div>
-                <div class="bg-white p-8 rounded-xl shadow card-hover transition">
-                    <div class="text-blue-500 text-4xl mb-4"><i class="fas fa-chart-bar"></i></div>
-                    <h3 class="text-xl font-bold mb-2">工程数据管理</h3>
-                    <p class="text-gray-600">项目进度、材料成本、人员调度一站式管理。</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing -->
-    <section id="pricing" class="py-20 bg-gray-100">
-        <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center mb-4">定价方案</h2>
-            <p class="text-gray-600 text-center mb-12">7 天免费试用，无信用卡要求</p>
-            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <!-- Free -->
-                <div class="bg-white p-8 rounded-xl shadow">
-                    <h3 class="text-xl font-bold mb-2">免费版</h3>
-                    <div class="text-4xl font-bold mb-4">¥0<span class="text-lg text-gray-500">/月</span></div>
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 2,000 Token/日</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 基础工具</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 社区支持</li>
-                    </ul>
-                    <a href="/auth/signup" class="block text-center bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition">
-                        立即开始
-                    </a>
-                </div>
-                <!-- Pro -->
-                <div class="bg-white p-8 rounded-xl shadow pricing-popular">
-                    <h3 class="text-xl font-bold mb-2">专业版</h3>
-                    <div class="text-4xl font-bold mb-4">¥149<span class="text-lg text-gray-500">/月</span></div>
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 10万 Token/日</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 全部工具</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> API 接入</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 优先支持</li>
-                    </ul>
-                    <a href="/auth/signup" class="block text-center bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition">
-                        升级专业版
-                    </a>
-                </div>
-                <!-- Enterprise -->
-                <div class="bg-white p-8 rounded-xl shadow">
-                    <h3 class="text-xl font-bold mb-2">企业版</h3>
-                    <div class="text-4xl font-bold mb-4">定制<span class="text-lg text-gray-500"></span></div>
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 500万 Token/日</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 私有部署</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> SLA 保障</li>
-                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 专属客服</li>
-                    </ul>
-                    <a href="/contact" class="block text-center bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-lg font-semibold transition">
-                        联系销售
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="py-20 gradient-hero text-white">
-        <div class="container mx-auto px-6 text-center">
-            <h2 class="text-3xl font-bold mb-4">开始您的 AI 建筑设计之旅</h2>
-            <p class="text-xl text-blue-200 mb-8">7 天免费试用，无需信用卡</p>
-            <a href="/auth/signup" class="inline-block bg-white text-blue-900 px-10 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition">
-                免费试用
+        <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight">
+            轻建筑 SaaS
+        </h1>
+        <p class="text-xl md:text-2xl text-red-300 font-semibold mb-3">建筑结构风险评估，30 秒出报告</p>
+        <p class="text-lg text-blue-200 mb-8 max-w-2xl mx-auto">
+            输入楼层数 + 结构类型，AI 自动匹配 GB 规范条文，生成可打印风险报告。
+            免费 3 次/天，Pro ¥199/月不限次。
+        </p>
+        <!-- 3 个 CTA -->
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="#pricing" class="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition shadow-lg shadow-red-600/30">
+                🏗️ 免费试用
+            </a>
+            <a href="sample_showcase.html" class="bg-white/10 hover:bg-white/20 backdrop-blur border-2 border-white/30 text-white px-8 py-4 rounded-lg font-bold text-lg transition">
+                🎬 看样片
+            </a>
+            <a href="https://afdian.com/@Zeon7744" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition">
+                💰 立即订阅
             </a>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-400 py-12">
-        <div class="container mx-auto px-6 text-center">
-            <p>&copy; 2026 建筑 SaaS. All rights reserved.</p>
+<!-- ═══ 3 档价格卡（与 PAYWALL 代码一致） ═══ -->
+<section id="pricing" class="py-16 bg-white">
+    <div class="container mx-auto px-6">
+        <h2 class="text-3xl font-bold text-center mb-3">选择方案</h2>
+        <p class="text-center text-gray-500 mb-12">与 billing.py PAYWALL 代码严格对齐</p>
+        <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <!-- Free -->
+            <div class="border-2 border-gray-200 rounded-2xl p-8 card-glow transition bg-white">
+                <h3 class="text-lg font-bold text-gray-500 mb-1">免费版</h3>
+                <div class="text-4xl font-black mb-1">¥0<span class="text-lg text-gray-400 font-normal">/月</span></div>
+                <p class="text-sm text-gray-500 mb-6">评估 3 次/天 · 基础报告</p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>3 次评估/天</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>基础风险报告</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>1 个租户</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>社区支持</li>
+                </ul>
+                <a href="/auth/signup" class="block text-center bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-lg font-bold mt-6 transition">免费开始</a>
+            </div>
+            <!-- Pro -->
+            <div class="border-2 border-gray-200 rounded-2xl p-8 card-glow transition bg-white popular-card">
+                <div class="popular-badge">推荐</div>
+                <h3 class="text-lg font-bold text-red-600 mb-1">专业版</h3>
+                <div class="text-4xl font-black mb-1">¥199<span class="text-lg text-gray-400 font-normal">/月</span></div>
+                <p class="text-sm text-gray-500 mb-6">不限次 · 完整报告含条文引用</p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>无限次评估</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>完整报告 + 条文引用</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>PDF 导出</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>优先技术支持</li>
+                </ul>
+                <a href="https://afdian.com/@Zeon7744" target="_blank" class="block text-center bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold mt-6 transition shadow-md shadow-red-600/20">升级 Pro</a>
+            </div>
+            <!-- Team -->
+            <div class="border-2 border-gray-200 rounded-2xl p-8 card-glow transition bg-white">
+                <h3 class="text-lg font-bold text-blue-600 mb-1">团队版</h3>
+                <div class="text-4xl font-black mb-1">¥399<span class="text-lg text-gray-400 font-normal">/月</span></div>
+                <p class="text-sm text-gray-500 mb-6">5 租户 · 台账管理</p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>Pro 全部功能</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>5 租户团队协作</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>台账管理</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i>多 Agent 协作</li>
+                </ul>
+                <a href="https://afdian.com/@Zeon7744" target="_blank" class="block text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold mt-6 transition">选择团队版</a>
+            </div>
         </div>
-    </footer>
+    </div>
+</section>
+
+<!-- ═══ 4 网关已接入 ═══ -->
+<section class="py-12 bg-gray-50 border-y">
+    <div class="container mx-auto px-6 text-center">
+        <h3 class="text-lg font-semibold text-gray-700 mb-6">💳 四网关支付已接入 · 环境变量一键切换</h3>
+        <div class="flex flex-wrap justify-center gap-4">
+            <div class="flex items-center gap-2 bg-white border rounded-lg px-4 py-2"><span class="text-2xl">🔇</span><span class="text-sm font-medium">Noop 演示</span><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">已接入</span></div>
+            <div class="flex items-center gap-2 bg-white border rounded-lg px-4 py-2"><span class="text-2xl">💚</span><span class="text-sm font-medium">微信支付</span><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">已接入</span></div>
+            <div class="flex items-center gap-2 bg-white border rounded-lg px-4 py-2"><span class="text-2xl">💰</span><span class="text-sm font-medium">爱收钱</span><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">已接入</span></div>
+            <div class="flex items-center gap-2 bg-white border rounded-lg px-4 py-2"><span class="text-2xl">❤️</span><span class="text-sm font-medium">爱发电</span><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">已接入</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ 底部 CTA ═══ -->
+<section class="hero-gradient text-white py-16">
+    <div class="container mx-auto px-6 text-center">
+        <h2 class="text-3xl font-black mb-4">30 秒生成你的第一份风险报告</h2>
+        <p class="text-lg text-blue-200 mb-8">免费 3 次/天，无需信用卡</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="/auth/signup" class="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-lg font-bold text-lg transition shadow-lg shadow-red-600/30">🏗️ 立即试用</a>
+            <a href="sample_showcase.html" class="bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white px-10 py-4 rounded-lg font-bold text-lg transition">🎬 看样片</a>
+            <a href="https://afdian.com/@Zeon7744" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-lg font-bold text-lg transition">💰 订阅付费</a>
+        </div>
+    </div>
+</section>
+
+<footer class="bg-gray-900 text-gray-500 py-8 text-center text-sm">
+    &copy; 2026 轻建筑 SaaS · MIT License · 爱发电 / 爱收钱 / 微信 / Noop 四网关
+</footer>
 </body>
 </html>
