@@ -1,110 +1,93 @@
-# jianzhu-saas —— 建筑结构风险评估 SaaS（最小付费功能）
+# jianzhu-saas 鈥斺€?寤虹瓚缁撴瀯椋庨櫓璇勪及 SaaS锛堟渶灏忎粯璐瑰姛鑳斤級
 
-面向中小型建筑/检测/监理企业的**建筑结构风险评估** API。
-输入混凝土强度、钢筋保护层、裂缝宽度，输出 0–100 风险分、风险等级与整改建议。
+闈㈠悜涓皬鍨嬪缓绛?妫€娴?鐩戠悊浼佷笟鐨?*寤虹瓚缁撴瀯椋庨櫓璇勪及** API銆?
+杈撳叆娣峰嚌鍦熷己搴︺€侀挗绛嬩繚鎶ゅ眰銆佽缂濆搴︼紝杈撳嚭 0鈥?00 椋庨櫓鍒嗐€侀闄╃瓑绾т笌鏁存敼寤鸿銆?
+## 蹇€熷紑濮嬶紙30 绉掕窇璧锋紨绀猴級
 
-## 功能（只列真实具备的）
-- 建筑结构风险评估：`POST /api/assessments`
-- 检测记录台账：`POST /api/inspections`
-- 多租户隔离：数据按 `tenant_id` 隔离，可私有部署
-- 计费 Credit 计量：每次评估扣 1 Credit，套餐配额（free/pro/enterprise）
-- 收款预留接口：`create_order / query_callback / refund`（未接具体支付网关，MVP 默认 NoopGateway）
+**闆剁涓夋柟渚濊禆锛岀函鏍囧噯搴?* 鈥斺€?clone 鍚庣洿鎺ヨ窇锛屼笉鐢?pip install锛?
 
-## 运行
+```bash
+git clone https://gitee.com/Zeon7744/jianzhu-saas.git && cd jianzhu-saas
+python -m jianzhu_saas.cli          # 鍚姩鍚庢祻瑙堝櫒鎵撳紑 http://127.0.0.1:8080/
 ```
-python api_server.py          # 默认 :8080
+
+1. **瑁呬緷璧?*锛氭棤銆侾ython 鈮?3.9 鍗冲彲銆?
+2. **閰嶇疆**锛氭紨绀烘ā寮忛浂閰嶇疆銆傛帴鐪熷疄鏀粯/鐢熶骇鎵嶉渶鍓埗閰嶇疆锛歚cp .env.example .env` 骞跺～ `JZ_BILLING_GATEWAY` + 瀵瑰簲鍑瘉锛坅fdian / aishouqian / wepay锛夈€?
+3. **鍚姩**锛歚python -m jianzhu_saas.cli` 鍚庢祻瑙堝櫒鎵撳紑 `http://127.0.0.1:8080/` 鈫?鐐广€岀櫥褰曟紨绀虹鎴枫€嶁啋 杈撳叆涓夐」鎸囨爣 鈫?璇勪及椋庨櫓锛堢鍑?CRITICAL 鎶ュ憡 + Credit 鎵ｅ噺锛夈€?
+
+curl 涓€琛屼綋楠岋紙鍙﹀紑缁堢锛夛細
+
+```bash
+python -m jianzhu_saas.cli --print-token   # 鎵撳嵃鐜版垚鍙矘璐寸殑 curl
+```
+
+| 鍙傛暟 | 璇存槑 |
+|---|---|
+| `--port 8000` | 鎹㈢鍙?|
+| `--db :memory:` | 鍐呭瓨搴撲复鏃舵紨绀猴紙涓嶈惤鐩橈紝澶氱嚎绋嬪叡浜悓涓€瀹炰緥锛?|
+| `--gateway afdian` | 鍒囨崲鏀舵缃戝叧锛坣oop / aishouqian / wepay / afdian锛?|
+
+### 灏忕▼搴忔笭閬撹鏄?
+
+褰撳墠浜х墿涓?**Web 鐗堝嵆鐢ㄦ紨绀?*锛堟湰浠撳簱鏃犲井淇″皬绋嬪簭宸ョ▼锛夛細
+- 婕旂ず/楠岃瘉锛氭湰鍦?CLI 鍚姩鍚庢祻瑙堝櫒鎵撳紑锛屾垨閮ㄧ讲鍒板缃戝煙鍚嶅悗娴忚鍣ㄦ墦寮€锛?
+- 鍙樼幇锛氱埍鍙戠數锛坅fdian 缃戝叧宸叉帴鍏ワ級鍙祵鍏ュ井淇″叕浼楀彿/灏忕▼搴忔敹娆鹃摼璺紱灏忕▼搴忎綋楠屽眰寰?P1 鎵╁睍锛堝皝瑁搁」鐩?API锛夛紝褰撳墠涓嶉樆濉炰氦浠欍€?
+
+
+## 鍔熻兘锛堝彧鍒楃湡瀹炲叿澶囩殑锛?
+- 寤虹瓚缁撴瀯椋庨櫓璇勪及锛歚POST /api/assessments`
+- 妫€娴嬭褰曞彴璐︼細`POST /api/inspections`
+- 澶氱鎴烽殧绂伙細鏁版嵁鎸?`tenant_id` 闅旂锛屽彲绉佹湁閮ㄧ讲
+- 璁¤垂 Credit 璁￠噺锛氭瘡娆¤瘎浼版墸 1 Credit锛屽椁愰厤棰濓紙free/pro/enterprise锛?
+- 鏀舵棰勭暀鎺ュ彛锛歚create_order / query_callback / refund`锛堟湭鎺ュ叿浣撴敮浠樼綉鍏筹紝MVP 榛樿 NoopGateway锛?
+
+## 杩愯
+
+涓€閿惎鍔紙鎺ㄨ崘锛夛細
+
+```
+python -m jianzhu_saas.cli                # 榛樿 :8080
+python -m jianzhu_saas.cli --port 9000    # 鎹㈢鍙?
+python -m jianzhu_saas.cli --db :memory:   # 涓存椂鍐呭瓨搴?
+```
+
+鐩存帴璺戞湇鍔″叆鍙ｏ紙绛変环锛屾棤 CLI 鍖呰锛夛細
+
+```
+python api_server.py          # 榛樿 :8080
 JZ_SAAS_PORT=9000 python api_server.py
 ```
-访问 `http://127.0.0.1:8080/` 打开演示页，登录 demo 租户后录入三项指标即可出评估。
 
-## 鉴权
+## 閴存潈
 ```
-# 演示环境签发 token（生产替换为正式租户签发）
+# 婕旂ず鐜绛惧彂 token锛堢敓浜ф浛鎹负姝ｅ紡绉熸埛绛惧彂锛?
 curl -X POST :8080/auth/demo-token -d '{"plan":"free"}' -H 'Content-Type: application/json'
-# 带 token 调用评估
+# 甯?token 璋冪敤璇勪及
 curl -X POST :8080/api/assessments -H "Authorization: Bearer <token>" \
      -d '{"metrics":{"concrete_strength_mpa":12,"rebar_cover_mm":14,"crack_width_mm":0.6}}'
 ```
 
-## 免责声明（产品层）
-本系统输出**仅为算法参考**。任何结构安全判定、加固或停用决策，必须由**持证结构工程师**签字负责。
+## 鍏嶈矗澹版槑锛堜骇鍝佸眰锛?
+鏈郴缁熻緭鍑?*浠呬负绠楁硶鍙傝€?*銆備换浣曠粨鏋勫畨鍏ㄥ垽瀹氥€佸姞鍥烘垨鍋滅敤鍐崇瓥锛屽繀椤荤敱**鎸佽瘉缁撴瀯宸ョ▼甯?*绛惧瓧璐熻矗銆?
 
----
+## 鍥藉唴鏀舵锛堥鐣欙紝涓嶅～瀵嗛挜鍗冲彲璺戦€氾級
+- 鍐呯疆涓変釜缃戝叧锛歚noop`锛堥粯璁ゅ崰浣嶏級/ `wepay`锛堝井淇″晢鎴凤級/ `aishouqian`锛堢埍鏀堕挶鑱氬悎锛夈€?
+- 鐢ㄧ幆澧冨彉閲?`JZ_SAAS_BILLING_GATEWAY` 鍒囨崲锛涚己鐪?`noop`銆?
+- 閰嶉綈瀵嗛挜鍚庤嚜鍔ㄨ蛋鐪熷疄涓嬪崟锛歚JZ_WXPAY_MCHID / JZ_WXPAY_APPID / JZ_WXPAY_API_KEY`锛屾垨 `JZ_AISHOUQIAN_MCH_NO / JZ_AISHOUQIAN_TOKEN / JZ_AISHOUQIAN_APPID`銆?
+- 鏈厤瀵嗛挜鏃剁綉鍏宠繑鍥?`created_pending_key` 骞跺垪鍑?`needs_secret`锛屽墠绔嵁姝ゆ彁绀?寰呭紑閫氭敮浠?銆?
 
-## ⚖️ 法控声明（SaaS 数据与合规）
-
-- **数据不用于训练**：用户上传的项目数据、评估记录、租户配置**仅用于当次功能计算**，本系统**不将任何用户数据用于模型训练、微调或二次数据开发**；数据按租户隔离存储（`WHERE tenant_id=?`），跨租户不可见。
-- **非结构安全判定**：所有算法输出仅为参考，不替代持证工程师的法定判定与签字责任。
-- **隐私条款**：仅采集运行必需数据，不采集与功能无关的个人信息；数据保留期限与删除请求见产品层说明。
-- **收款合规**：收款走爱发电/爱收钱/微信商户网关（见 `billing.py`，权益发放待联调），本仓不直接经手资金结算，仅做权益发放接口对接。
-
----
-
-## 🚀 免费 → Pro → 企业（变现入口）
-
-免费=100 次评估/月；Pro=¥99/月（无限评估+PDF）；企业=¥999/月（私有部署+定制）
-
-- **免费**：立即 [安装/克隆] 使用，命中配额即可升级。
-- **Pro（¥99/月）**：[爱发电订阅](https://afdian.net/@Zeon7744) 解锁高级能力。
-- **企业（¥999/月）**：私有部署 / 定制需求 → [联系商务](https://afdian.net/@Zeon7744)。
-
-> 详细定价见 [pricing.md](pricing.md)
-
----
-
-## 快速上手
-依赖安装：
-```bash
-python3 -m pip install -r requirements.txt
+## 娴嬭瘯
 ```
-
-## 变现路径
-免费 → Pro（¥99/月）→ 企业（¥999/月）；收款走爱发电（主渠道）/爱收钱/微信商户网关（billing.py）。
-> 定价：见 [pricing.md](pricing.md) | 订阅：[爱发电 @Zeon7744](https://afdian.net/@Zeon7744)
-
----
-
-## 🏢 企业版功能（来自 jianzhu-agent 合并）
-
-以下功能已从 `jianzhu-agent` 合并入企业版：
-
-### 新增能力
-- **ReAct Agent 思维引擎**：推理+执行循环，支持自动查询数据库、搜索知识库、风险检查
-- **多 Agent 协作**：智管/智财/智项/智检/智安/智石六大专业 Agent
-- **知识库检索**：语义检索 + 关键词匹配混合搜索
-- **Agent 协作编排**：多 Agent 任务分配与结果汇总
-
-### 企业版 Demo
-```bash
-# 端到端自动化巡检闭环
-python demo_pipeline.py
+python3 -m unittest tests.test_api tests.test_billing -v
 ```
+## 定位与定价（2026-10-22 锁定）
 
-### 企业版调用示例
-```python
-from src.enterprise.agent import create_agent, ReActAgent
+jianzhu-saas 是给中小施工队的"轻建筑 SaaS"——小程序 30 秒上手，对标品茗/广联达 1/5 价格，不拼 BIM 重度建模，拼"轻量、便宜、马上能用"。
 
-# 创建专业 Agent
-agent = create_agent("智检")  # 检测质量 Agent
+**定价档位**（对标品茗 ARPU 走低价长尾）：
+- 个人版 ¥39/月 · 团队版 ¥99/月 · 企业版 ¥299/月（企业定制 ¥0.8-3 万/年）
+- 免费入口引流 → 付费订阅；年付 8 折
+- 已内置 wepay / aishouqian / afdian 四网关付费，AI 算量/审图接口预留
 
-# ReAct 推理
-react = ReActAgent(agent)
-result = react.run("帮我分析最近的检测异常报告")
-```
+> English: jianzhu-saas is a lightweight construction SaaS for small-to-mid contractors. Open in a WeChat mini-program in 30s, priced at 1/5 of Pinming/Glodon. Free tier to funnel → subscription.
 
-> 📦 企业版功能需 Pro/企业订阅解锁；免费版仅含基础 API。
-
-
----
-
-## 💰 订阅支持
-
-| 档位 | 价格 | 核心权益 |
-|------|------|----------|
-| 免费 | ¥0 | 100 次评估/月 |
-| Pro | ¥99/月 | 无限评估 + PDF 报告 |
-| 企业 | ¥999/月 | 私有部署 + 定制算法 |
-
-👉 **[立即订阅 — 爱发电](https://afdian.net/@Zeon7744)**（支付宝 / 微信支付）
-
-> 详细定价见 [pricing.md](pricing.md)

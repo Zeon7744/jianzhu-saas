@@ -11,7 +11,6 @@ jobs:
     strategy:
       matrix:
         platform: [gitee, gitcode]
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,38 +21,28 @@ jobs:
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
-          set -e
           REPO=${{ github.event.repository.name }}
-          if [ -z "${GITEE_TOKEN}" ]; then
-            echo "ERROR: GITEE_TOKEN secret not set. Gitee mirror skipped."
-            exit 0
-          fi
-          git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/Zeon7744/${REPO}.git" 2>/dev/null || true
-          git push gitee --all --force || echo "Gitee branch mirror failed"
-          git push gitee --tags --force || echo "Gitee tag mirror failed"
+          git remote add gitee https://oauth2:${GITEE_TOKEN}@gitee.com/Zeon7744/${REPO}.git 2>/dev/null || true
+          git push gitee --all --force
+          git push gitee --tags --force
 
-      - name: Mirror to GitCode via HTTPS token
+      - name: Mirror to GitCode
         if: matrix.platform == 'gitcode'
         env:
           GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
         run: |
-          set -e
           REPO=${{ github.event.repository.name }}
           if [ -z "${GITCODE_TOKEN}" ]; then
-            echo "ERROR: GITCODE_TOKEN secret not set. GitCode mirror skipped."
+            echo "ERROR: GITCODE_TOKEN secret is not set."
             exit 0
           fi
-          # GitCode token 作为 https 用户名或密码均可，这里用 oauth2:${TOKEN} 形式
-          GITCODE_REMOTE="https://oauth2:${GITCODE_TOKEN}@gitcode.net/Zeon7744/${REPO}.git"
-          git remote add gitcode "${GITCODE_REMOTE}" 2>/dev/null || git remote set-url gitcode "${GITCODE_REMOTE}"
-          # 提高超时与重试，应对偶发 WAF 抖动
-          git config http.postBuffer 524288000
+          git remote add gitcode https://oauth2:${GITCODE_TOKEN}@gitcode.com/Zeon7744/${REPO}.git 2>/dev/null || true
           for attempt in 1 2 3; do
-            echo "GitCode push attempt ${attempt}..."
             if git push gitcode --all --force 2>&1 && git push gitcode --tags --force 2>&1; then
-              echo "GitCode mirror OK on attempt ${attempt}."
+              echo "GitCode mirror OK"
               exit 0
             fi
+            echo "GitCode mirror attempt ${attempt} failed, retrying..."
             sleep $((attempt * 5))
           done
-          echo "WARNING: GitCode mirror failed after 3 attempts. Likely WAF block on runner egress."
+          echo "GitCode mirror FAILED after 3 attempts"
