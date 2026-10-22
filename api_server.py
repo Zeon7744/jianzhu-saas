@@ -73,6 +73,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, LEDGER_HTML, "text/html; charset=utf-8")
         if self.path == "/health":
             return self._send(200, {"status": "ok", "time": time.time()})
+        if self.path == "/pricing":
+            return self._send(200, billing.get_pricing_plans())
 
         claims, err = require_tenant(self)
         if err:
@@ -155,6 +157,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(201, rec)
 
         if self.path == "/api/assessments":
+            # 付费墙：Free 用户每日限 3 次评估
+            _t = tsvc.get(tid) or tsvc.ensure_tenant(tid, plan=claims.get("plan", "free"))
+            plan = _t.get("plan", "free")
+            pw = billing.enforce_paywall(plan, "assessment", tenant_id=tid)
+            if not pw.get("allowed"):
+                return self._send(402, {"error": "paywall", "reason": pw["reason"], "upgrade_url": pw.get("upgrade_url", "/pricing")})
             # 计量 Credit：每次评估扣 1
             r = meter.record(tid, "assessment", 1)
             if not r.get("allowed"):

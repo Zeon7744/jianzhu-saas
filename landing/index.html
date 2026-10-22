@@ -33,7 +33,78 @@
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Hero Section -->
+    <!-- 🆕 Hero 区：轻建筑 SaaS 品牌首屏 -->
+    <section class="bg-gradient-to-br from-slate-900 via-slate-800 to-red-900 text-white py-16 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10" style="background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 80 80%22><path d=%22M0 0h80v80H0z%22 fill=%22none%22/><path d=%22M0 80L80 0%22 stroke=%22white%22 stroke-width=%220.5%22/></svg>');"></div>
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="text-center mb-10">
+                <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight">轻建筑 SaaS</h1>
+                <p class="text-xl md:text-2xl text-red-300 font-semibold mb-2">对标品茗 1/5 价格 · ¥39 起</p>
+                <p class="text-lg text-blue-200 mb-6">已接入 4 网关 + AI 算量预留</p>
+                <button onclick="document.getElementById('demo-form').scrollIntoView({behavior:'smooth'})" 
+                    class="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-lg font-bold text-lg transition shadow-lg shadow-red-600/30">
+                    🏗️ 免费试用
+                </button>
+            </div>
+            <!-- 三个 Persona 卡片 -->
+            <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-8">
+                <div class="bg-white/10 backdrop-blur rounded-xl p-6 border border-white/20 hover:bg-white/20 transition">
+                    <div class="text-3xl mb-3">👷</div>
+                    <h3 class="font-bold text-lg mb-1">张包工</h3>
+                    <p class="text-blue-200 text-sm">工地现场检测，快速出风险评估报告，甲方催着要</p>
+                    <p class="text-green-300 text-xs mt-2">→ Free 版 3 次/天够用</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-xl p-6 border border-white/20 hover:bg-white/20 transition">
+                    <div class="text-3xl mb-3">🏗️</div>
+                    <h3 class="font-bold text-lg mb-1">王项目经理</h3>
+                    <p class="text-blue-200 text-sm">多项目并行管理，需要台账+条文引用+团队协作</p>
+                    <p class="text-green-300 text-xs mt-2">→ Pro ¥199/月 不限次</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-xl p-6 border border-white/20 hover:bg-white/20 transition">
+                    <div class="text-3xl mb-3">🏢</div>
+                    <h3 class="font-bold text-lg mb-1">李团队负责人</h3>
+                    <p class="text-blue-200 text-sm">检测公司/高校实验室，多租户隔离+私有部署+SLA</p>
+                    <p class="text-green-300 text-xs mt-2">→ Team ¥399/月 5 租户</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 🆕 四网关示意图 -->
+    <section class="py-12 bg-white border-b">
+        <div class="container mx-auto px-6">
+            <h2 class="text-2xl font-bold text-center mb-2">💳 四网关支付已接入</h2>
+            <p class="text-gray-500 text-center mb-8">一个环境变量切换，零代码改动</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
+                    <div class="text-2xl mb-2">🔇</div>
+                    <h4 class="font-bold">Noop</h4>
+                    <p class="text-xs text-gray-500 mt-1">演示占位</p>
+                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
+                </div>
+                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
+                    <div class="text-2xl mb-2">💚</div>
+                    <h4 class="font-bold">微信支付</h4>
+                    <p class="text-xs text-gray-500 mt-1">JSAPI/H5 下单</p>
+                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
+                </div>
+                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
+                    <div class="text-2xl mb-2">💰</div>
+                    <h4 class="font-bold">爱收钱</h4>
+                    <p class="text-xs text-gray-500 mt-1">聚合收银台</p>
+                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
+                </div>
+                <div class="border-2 border-gray-200 rounded-xl p-5 text-center hover:border-green-400 transition relative">
+                    <div class="text-2xl mb-2">❤️</div>
+                    <h4 class="font-bold">爱发电</h4>
+                    <p class="text-xs text-gray-500 mt-1">个人创作者</p>
+                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">已接入</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hero Section (原有) -->
     <section class="gradient-hero text-white py-20">
         <div class="container mx-auto px-6 text-center">
             <h1 class="text-4xl md:text-6xl font-bold mb-6">

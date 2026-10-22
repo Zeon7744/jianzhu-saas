@@ -20,6 +20,74 @@ import urllib.request
 
 from store import tsvc
 
+# ---------- 付费墙规则 ----------
+PAYWALL_RULES = {
+    "free":       {"max_assessments_per_day": 3,  "max_tenants": 1, "report_level": "basic",  "label": "免费版"},
+    "pro":        {"max_assessments_per_day": 999, "max_tenants": 1, "report_level": "full",   "label": "专业版 ¥199/月"},
+    "team":       {"max_assessments_per_day": 999, "max_tenants": 5, "report_level": "full",   "label": "团队版 ¥399/月"},
+    "enterprise": {"max_assessments_per_day": 999, "max_tenants": 99,"report_level": "full",   "label": "企业版 定制"},
+}
+
+# 每日用量计数（进程内 dict；生产应落 DB）
+_daily_usage = {}  # {tenant_id: {"date": "YYYY-MM-DD", "count": int}}
+
+
+def enforce_paywall(plan: str, action: str, tenant_id: str = "") -> dict:
+    """检查付费墙：返回 {"allowed": bool, "reason": str, "upgrade_url": str}。
+    action 目前支持 "assessment"。"""
+    import time as _time
+    rules = PAYWALL_RULES.get(plan, PAYWALL_RULES["free"])
+    today = _time.strftime("%Y-%m-%d")
+
+    if action == "assessment":
+        limit = rules["max_assessments_per_day"]
+        usage = _daily_usage.get(tenant_id, {"date": today, "count": 0})
+        if usage["date"] != today:
+            usage = {"date": today, "count": 0}
+        if usage["count"] >= limit:
+            return {
+                "allowed": False,
+                "reason": f"free_plan_daily_limit_reached ({limit}/天)，请升级 Pro",
+                "upgrade_url": "/pricing",
+                "http_status": 402,
+            }
+        usage["count"] += 1
+        _daily_usage[tenant_id] = usage
+        return {"allowed": True, "remaining": limit - usage["count"], "reason": ""}
+
+    return {"allowed": True, "remaining": -1, "reason": ""}
+
+
+def get_pricing_plans():
+    """返回定价列表，供 /pricing 端点使用。"""
+    return [
+        {
+            "plan": "free",
+            "price": 0,
+            "price_label": "¥0/月",
+            "features": ["3 次评估/天", "基础风险报告", "社区支持"],
+        },
+        {
+            "plan": "pro",
+            "price": 19900,
+            "price_label": "¥199/月",
+            "features": ["无限次评估", "完整报告（含条文引用）", "优先技术支持"],
+        },
+        {
+            "plan": "team",
+            "price": 39900,
+            "price_label": "¥399/月",
+            "features": ["Pro 全部功能", "5 租户团队协作", "台账管理"],
+        },
+        {
+            "plan": "enterprise",
+            "price": 0,
+            "price_label": "定制报价",
+            "features": ["私有部署", "SLA 保障", "专属客服", "AI 算量定制"],
+        },
+    ]
+
+
 BUILTIN_REGISTRY = {}
 
 

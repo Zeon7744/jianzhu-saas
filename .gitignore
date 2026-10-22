@@ -4,3 +4,4 @@ data/*.db
 !data/.gitkeep
 
 .env
+data/jianzhu_saas.db-journal
