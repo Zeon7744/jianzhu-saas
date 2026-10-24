@@ -25,7 +25,7 @@ python -m jianzhu_saas.cli --print-token   # 鎵撳嵃鐜版垚鍙矘璐寸�
 |---|---|
 | `--port 8000` | 鎹㈢鍙?|
 | `--db :memory:` | 鍐呭瓨搴撲复鏃舵紨绀猴紙涓嶈惤鐩橈紝澶氱嚎绋嬪叡浜悓涓€瀹炰緥锛?|
-| `--gateway afdian` | 鍒囨崲鏀舵缃戝叧锛坣oop / aishouqian / wepay / afdian锛?|
+| `--gateway mbd` | 鍒囨崲鏀舵缃戝叧锛坣oop / aishouqian / wepay / mbd锛?|
 
 ### 灏忕▼搴忔笭閬撹鏄?
 
@@ -97,7 +97,7 @@ python3 -m unittest tests.test_api tests.test_billing -v
 ### 数据与隔离
 - 用户数据**不用于模型训练**，SaaS 层数据隔离（按租户隔离）
 - 企业版支持私有部署，数据不出境、不上云
-- 计费网关（wepay / aishouqian / afdian）仅处理支付，不回传业务数据
+- 计费网关（wepay / aishouqian / mbd）仅处理支付，不回传业务数据
 
 ### 内容版权
 - AIGC 生成的算量/审图结果：版权归使用者，但需遵守建筑行业标准与执业规范
@@ -117,7 +117,7 @@ jianzhu-saas 是给中小施工队的"轻建筑 SaaS"——小程序 30 秒上�
 **定价档位**（对标品茗 ARPU 走低价长尾）：
 - 个人版 ¥39/月 · 团队版 ¥99/月 · 企业版 ¥299/月（企业定制 ¥0.8-3 万/年）
 - 免费入口引流 → 付费订阅；年付 8 折
-- 已内置 wepay / aishouqian / afdian 四网关付费，AI 算量/审图接口预留
+- 已内置 wepay / aishouqian / mbd 四网关付费，AI 算量/审图接口预留
 
 > English: jianzhu-saas is a lightweight construction SaaS for small-to-mid contractors. Open in a WeChat mini-program in 30s, priced at 1/5 of Pinming/Glodon. Free tier to funnel → subscription.
 
@@ -125,17 +125,17 @@ jianzhu-saas 是给中小施工队的"轻建筑 SaaS"——小程序 30 秒上�
 
 ---
 
-## 💛 支持 & 发布（爱发电双通道）
+## 💛 支持 & 发布（面包多 Pay双通道）
 
-本仓通过**爱发电**完成「**创作者赞赏/订阅收款**」与「**作品/内容社区发布**」双通道运营，二者共存：
+本仓通过**面包多 Pay**完成「**创作者赞赏/订阅收款**」与「**作品/内容社区发布**」双通道运营，二者共存：
 
 | 通道 | 用途 | 入口 |
 |------|------|------|
-| 💰 爱发电收款 | 赞赏、订阅、Pro 会员、赞助维护 | [爱发电 @Zeon7744](https://afdian.net/@Zeon7744) |
-| 📣 爱发电社区发布 | 作品展示、内容连载、粉丝互动、发布分发 | [爱发电社区 @Zeon7744](https://afdian.com/user/0c59dda8a1bb11f19b9552540025c377) |
+| 💰 面包多 Pay收款 | 赞赏、订阅、Pro 会员、赞助维护 | [面包多 Pay @Zeon7744](https://mbd.net/@Zeon7744) |
+| 📣 面包多 Pay社区发布 | 作品展示、内容连载、粉丝互动、发布分发 | [面包多 Pay社区 @Zeon7744](https://mbd.com/user/0c59dda8a1bb11f19b9552540025c377) |
 
 - **收款**：赞赏 / 订阅 Pro / 企业赞助，支付宝 + 微信支付，无需备案域名
-- **社区发布**：把本仓产出（作品 / 剧本 / 工具演示 / 案例）在爱发电社区连载发布，沉淀粉丝、引流回仓
+- **社区发布**：把本仓产出（作品 / 剧本 / 工具演示 / 案例）在面包多 Pay社区连载发布，沉淀粉丝、引流回仓
 - 两通道独立共存，按需选用；收款不强制绑定社区发布
 
 > 本仓内容仅供创作参考，发布前请完成人工合规审查与平台备案。
@@ -156,8 +156,8 @@ jianzhu-saas 是给中小施工队的"轻建筑 SaaS"——小程序 30 秒上�
 
 | 方式 | 入口 | 说明 |
 |------|------|------|
-| 社区评论 | [爱发电社区 @Zeon7744](https://afdian.com/user/0c59dda8a1bb11f19b9552540025c377) | 作品下评论/留言，直接驱动迭代 |
+| 社区评论 | [面包多 Pay社区 @Zeon7744](https://mbd.com/user/0c59dda8a1bb11f19b9552540025c377) | 作品下评论/留言，直接驱动迭代 |
 | Issue | 本仓 GitHub / Gitee / GitCode 的 Issues | Bug / 功能建议 / 定价反馈 |
-| 赞赏反馈 | 爱发电赞赏留言 | 支持的同时留下使用心得 |
+| 赞赏反馈 | 面包多 Pay赞赏留言 | 支持的同时留下使用心得 |
 
 > 每一条回馈都是产品优化的第一手依据。不强制，但真诚欢迎。

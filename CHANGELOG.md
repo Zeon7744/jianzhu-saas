@@ -18,8 +18,8 @@
 
 - `92e8328` ci: 三端全自动镜像（Gitee SSH + GitCode token）
 - `04d1768` docs(readme): 先体验后付费 + 用户回馈驱动迭代
-- `837c0e9` docs(readme): 统一补「爱发电收款+社区发布」双区块（全仓共存）
-- `3d9a30a` revert(billing): 撤 BufPay 网关，全仓统一爱发电收款+社区发布
+- `837c0e9` docs(readme): 统一补「面包多 Pay收款+社区发布」双区块（全仓共存）
+- `3d9a30a` revert(billing): 撤 BufPay 网关，全仓统一面包多 Pay收款+社区发布
 
 ## 维护说明
 

@@ -14,5 +14,5 @@ bash run.sh    # 一键启动 SaaS 服务
 
 ## 3. 收款与门控
 - Free ¥0（3 次/天）/ Pro ¥199/月 / Team ¥399/月
-- 爱发电：https://afdian.com/@Zeon7744
+- 面包多 Pay：https://mbd.com/@Zeon7744
 - 冒烟：`bash smoke_test.sh`
