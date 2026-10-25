@@ -5,3 +5,4 @@ data/*.db
 
 .env
 data/jianzhu_saas.db-journal
+praise_ledger.jsonl
