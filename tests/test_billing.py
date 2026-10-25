@@ -6,7 +6,7 @@ import billing
 
 class TestGateways(unittest.TestCase):
     def test_registry_has_4(self):
-        for n in ["noop", "wepay", "aishouqian", "afdian"]:
+        for n in ["noop", "wepay", "aishouqian", "mbd"]:
             self.assertIn(n, billing.BUILTIN_REGISTRY)
 
     def test_noop_ok(self):
@@ -24,12 +24,12 @@ class TestGateways(unittest.TestCase):
         self.assertEqual(o["status"], "created_pending_key")
         self.assertIn("mch_no", o["needs_secret"])
 
-    def test_afdian_pending_key(self):
-        o = billing.get_gateway("afdian").create_order("t1", 9900, "p", "pro")
+    def test_mbd_pending_key(self):
+        o = billing.get_gateway("mbd").create_order("t1", 9900, "p", "pro")
         self.assertEqual(o["status"], "created_pending_key")
-        # needs_secret 格式为 JZ_SAAS_AFDIAN_USER_ID / JZ_SAAS_AFDIAN_TOKEN
-        self.assertTrue(any("AFDIAN" in s for s in o["needs_secret"]), o["needs_secret"])
-        self.assertIn("JZ_SAAS_AFDIAN_TOKEN", o["needs_secret"])
+        # needs_secret 格式为 MBD_API_KEY / MBD_APP_ID
+        self.assertTrue(any("mbd" in s for s in o["needs_secret"]), o["needs_secret"])
+        self.assertIn("JZ_SAAS_MBD_TOKEN", o["needs_secret"])
 
     def test_unknown_falls_back_noop(self):
         self.assertEqual(billing.get_gateway("nope").name, "noop")

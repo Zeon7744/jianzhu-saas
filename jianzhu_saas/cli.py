@@ -7,7 +7,7 @@
     python -m jianzhu_saas.cli                     # 默认 :8080，浏览器开 http://127.0.0.1:8080/
     python -m jianzhu_saas.cli --port 8000         # 换端口
     python -m jianzhu_saas.cli --db :memory:        # 内存库（临时演示，不落 data/）
-    python -m jianzhu_saas.cli --gateway afdian    # 切换支付网关
+    python -m jianzhu_saas.cli --gateway mbd    # 切换支付网关
     python -m jianzhu_saas.cli --print-token demo   # 打印演示 Bearer token + 现成 curl 后退出
 
 演示路径（30 秒跑通）:

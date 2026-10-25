@@ -19,14 +19,14 @@ def test_pro_rights_mapping_persisted():
     assert r2["monthly_quota"] == 100 and r2["report_level"] == "basic" and r2["seats"] == 1
 
 
-def test_afdian_gateway_pending_key():
-    """爱发电网关：token 未配时返回 created_pending_key 且标注需要注入的 secret。"""
+def test_mbd_gateway_pending_key():
+    """面包多 Pay网关：token 未配时返回 created_pending_key 且标注需要注入的 secret。"""
     import os
-    os.environ.pop("JZ_SAAS_AFDIAN_TOKEN", None)
-    os.environ.pop("JZ_SAAS_AFDIAN_USER", None)
-    from billing import AfdianGateway
-    g = AfdianGateway()
+    os.environ.pop("JZ_SAAS_MBD_TOKEN", None)
+    os.environ.pop("JZ_SAAS_MBD_USER", None)
+    from billing import mbdGateway
+    g = mbdGateway()
     o = g.create_order("t1", 9900, "jianzhu-saas-sub", "pro")
     assert o["status"] == "created_pending_key", o
-    assert o["gateway"] == "afdian"
-    assert any("AFDIAN_TOKEN" in s for s in o["needs_secret"]), o["needs_secret"]
+    assert o["gateway"] == "mbd"
+    assert any("MBD_API_KEY" in s for s in o["needs_secret"]), o["needs_secret"]
